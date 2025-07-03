@@ -73,9 +73,8 @@ Route::get('/livreur/commandes', [CommnandeController::class, 'indexLivreur'])
     Route::post('/commandes/{commande}/position', [NavigationController::class, 'updatePosition']);
 });
 
-// Routes pour les messages utilisateur - IMPORTANT: ces routes doivent être à l'extérieur du préfixe admin
 Route::middleware(['auth'])->group(function() {
-    // Route pour afficher les messages
+    // Route affichage les messages
     Route::get('/messages', [MessageController::class, 'index'])
          ->name('user.messages');
     
