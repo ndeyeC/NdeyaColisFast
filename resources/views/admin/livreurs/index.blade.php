@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Livreurs en attente de validation')
+@section('title', 'Liste des livreurs')
 
 @section('content')
 <div class="card">

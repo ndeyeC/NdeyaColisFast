@@ -21,6 +21,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
  protected $table = 'users';
 protected $primaryKey = 'user_id';
+public $incrementing = true;
+protected $keyType = 'int';
+
 protected $fillable = [
         'name',
          'email',
@@ -28,6 +31,7 @@ protected $fillable = [
         'numero_telephone',
         'adress',
         'role',
+        'fcm_token'
      ];
      
 
@@ -64,6 +68,12 @@ protected $fillable = [
     {
         return $this->morphMany(Communication::class, 'sender');
     }
+
+    public function livraisons()
+{
+    return $this->hasMany(Commnande::class, 'driver_id', 'user_id');
+}
+
     
     public function receivedCommunications()
     {
@@ -73,6 +83,42 @@ protected $fillable = [
     public function communications()
     {
         return $this->sentCommunications()->union($this->receivedCommunications());
+    }
+
+    public function getValidTokensForZone($zoneId)
+    {
+        return $this->tokens()
+            ->where('status', TokenTransaction::STATUS_COMPLETED)
+            ->where('delivery_zone_id', $zoneId)
+            ->where(function($query) {
+                $query->whereNull('expiry_date')
+                    ->orWhere('expiry_date', '>', now());
+            })
+            ->sum('amount');
+    }
+    
+
+    public function hasEnoughTokensForDelivery($zoneId, $tokensNeeded = 1)
+    {
+        return $this->getValidTokensForZone($zoneId) >= $tokensNeeded;
+    }
+    
+    
+    public function debitTokensForDelivery($zoneId, $tokensNeeded = 1, $notes = null)
+    {
+    
+        if (!$this->hasEnoughTokensForDelivery($zoneId, $tokensNeeded)) {
+            throw new \Exception("Pas assez de jetons disponibles pour cette zone");
+        }
+        
+        
+        return $this->tokens()->create([
+            'amount' => -$tokensNeeded,
+            'delivery_zone_id' => $zoneId,
+            'status' => TokenTransaction::STATUS_COMPLETED,
+            'reference' => 'USE-'.uniqid(),
+            'notes' => $notes ?: 'Utilisation pour livraison'
+        ]);
     }
 
      /**

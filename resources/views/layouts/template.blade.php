@@ -11,6 +11,8 @@
             background-color: #4CAF50;
             color: white;
         }
+
+        
     </style>
 </head>
 <body class="bg-gray-100">

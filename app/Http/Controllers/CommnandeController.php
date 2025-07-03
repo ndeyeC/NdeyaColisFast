@@ -2,28 +2,31 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Http\Request;
 use App\Models\Commnande;
 use App\Models\Zone;
+use App\Models\User;
 use App\Models\Tarif;
-use App\Services\PaytechService;
+use App\Services\CinetPayService; 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Notifications\SupportColisfast;
+use App\Services\GeocodingService;
 
 class CommnandeController extends Controller
 {
-    // Définition des suppléments pour les types de livraison
     const SUPPLEMENT_STANDARD = 500;  // FCFA
     const SUPPLEMENT_EXPRESS = 1000;  // FCFA
     
-    protected $paytechService;
-    
-    public function __construct(PaytechService $paytechService)
+    protected $cinetPayService; 
+    public function __construct(CinetPayService $cinetPayService) 
     {
-        $this->paytechService = $paytechService;
+        $this->cinetPayService = $cinetPayService; 
     }
     
+
     public function create()
     {
         // Récupérer tous les tarifs
@@ -32,7 +35,6 @@ class CommnandeController extends Controller
         // Récupérer toutes les zones
         $zones = Zone::all();
         
-        // Transmettre les suppléments à la vue pour le calcul JS
         $supplements = [
             'standard' => self::SUPPLEMENT_STANDARD,
             'express' => self::SUPPLEMENT_EXPRESS
@@ -46,21 +48,27 @@ class CommnandeController extends Controller
         $validated = $request->validate([
             'adresse_depart' => 'required|string|max:255',
             'adresse_arrivee' => 'required|string|max:255',
+            'details_adresse_depart' => 'nullable|string|max:255', 
+            'details_adresse_arrivee' => 'nullable|string|max:255',
             'type_colis' => 'required|string',
             'type_livraison' => 'required|in:standard,express',
             'prix' => 'sometimes|numeric',
             'region_depart' => 'sometimes|string',
             'region_arrivee' => 'sometimes|string',
             'type_zone' => 'sometimes|string',
-            'mode_paiement' => 'required|string|in:wave,orange money,tokens'
+            'mode_paiement' => 'required|string|in:wave,orange money,tokens',
+            // Ajout des champs client pour CinetPay
+            'customer_name' => 'sometimes|string|max:100',
+            'customer_surname' => 'sometimes|string|max:100',
+            'customer_email' => 'sometimes|email|max:100',
+            'customer_phone' => 'sometimes|string|max:20'
         ]);
 
-        // Si les régions sont déjà dans la requête, les utiliser
         if ($request->filled('region_depart') && $request->filled('region_arrivee')) {
             $regionDepart = $request->region_depart;
             $regionArrivee = $request->region_arrivee;
         } else {
-            // Sinon, extraire les régions des adresses
+
             $regionDepart = $this->extraireRegion($validated['adresse_depart']);
             $regionArrivee = $this->extraireRegion($validated['adresse_arrivee']);
         }
@@ -71,11 +79,9 @@ class CommnandeController extends Controller
                 ->withInput();
         }
 
-        // Si un prix est déjà calculé côté client et transmis, l'utiliser
         if ($request->filled('prix')) {
             $prixBase = $request->prix;
         } else {
-            // Sinon, rechercher le tarif correspondant sans tenir compte du type de livraison
             $tarif = $this->findTarifSansLivraison($regionDepart, $regionArrivee, $validated['type_colis']);
 
             if (!$tarif) {
@@ -87,10 +93,10 @@ class CommnandeController extends Controller
             $prixBase = $tarif->prix;
         }
 
-        // Appliquer le supplément selon le type de livraison
         $prixFinal = $this->calculerPrixAvecSupplement($prixBase, $validated['type_livraison']);
 
-        // Générer une référence unique pour la commande
+
+       
         $reference = 'CMD-' . strtoupper(Str::random(8));
         
         // Créer la commande en attente de paiement
@@ -98,6 +104,8 @@ class CommnandeController extends Controller
         $commande->reference = $reference;
         $commande->adresse_depart = $validated['adresse_depart'];
         $commande->adresse_arrivee = $validated['adresse_arrivee'];
+        $commande->details_adresse_depart = $validated['details_adresse_depart']; 
+        $commande->details_adresse_arrivee = $validated['details_adresse_arrivee'];
         $commande->region_depart = $regionDepart;
         $commande->region_arrivee = $regionArrivee;
         $commande->type_zone = $request->type_zone ?? null;
@@ -110,330 +118,420 @@ class CommnandeController extends Controller
         $commande->user_id = Auth::id();
         $commande->save();
 
-        // Si paiement par jetons, traiter directement
-        // if ($validated['payment'] === 'tokens') {
+        //         // Notifier les livreurs a regarder plus tard
+// $livreurs = User::where('role', 'livreur')->get(); // ou adapte selon ta logique
+// Notification::send($livreurs, new SupportColisfast($commande));
+
+
+        //  Si paiement par jetons, traiter directement
+        //  if ($validated['mode_paiement'] === 'tokens') {
         //     return $this->processTokenPayment($commande);
-        // }
+        //  }
         
-        // Sinon, rediriger vers PayTech
-        return $this->redirectToPaytech($commande);
+        // //  Sinon, rediriger vers PayTech
+        
+    
+
+        // Rediriger vers CinetPay
+        return $this->redirectToCinetPay($commande, $validated);
     }
-    
+
     /**
-     * Rediriger vers PayTech pour le paiement
+     * Rediriger vers CinetPay pour le paiement
      */
-//  
-
-/**
- * Rediriger vers PayTech pour le paiement
- */
-// private function redirectToPaytech(Commnande $commande)
-// {
-//     // Vérifier si l'environnement est en local, forcer HTTPS pour les URLs
-//     $successUrl = app()->environment('local') ? secure_url(route('commnandes.payment.success')) : route('commnandes.payment.success');
-//     $ipnUrl = app()->environment('local') ? secure_url(route('commnandes.payment.ipn')) : route('commnandes.payment.ipn');
-//     $cancelUrl = app()->environment('local') ? secure_url(route('commnandes.payment.cancel')) : route('commnandes.payment.cancel');
-
-//     // Construction des données pour la requête de paiement
-//     $paymentData = [
-//         'item_name' => 'Livraison ' . $commande->reference,
-//         'item_price' => number_format($commande->prix_final, 2, '.', ''),
-//         'ref_command' => $commande->reference,
-//         'command_name' => 'Livraison ' . $commande->type_colis,
-//         'success_url' => $successUrl,
-//         'ipn_url' => $ipnUrl,
-//         'cancel_url' => $cancelUrl,
-//         'custom_field' => (object)[
-//             'commande_id' => $commande->id,
-//             'user_id' => $commande->user_id,
-//             'mode_paiement' => $commande->mode_paiement
-//         ]
-//     ];
-
-//     try {
-//         // Appel à PayTech pour créer la requête de paiement
-//         $response = $this->paytechService->createPaymentRequest($paymentData);
-
-//         // Vérifier la réponse et rediriger l'utilisateur
-//         if (isset($response['success']) && $response['success']) {
-//             // Mettre à jour la commande avec les données de paiement
-//             $commande->update([
-//                 'payment_token' => $response['data']['token'] ?? null,
-//                 'payment_data' => is_string($response['data']) ? $response['data'] : json_encode($response['data']),
-//             ]);
-
-//             // Rediriger l'utilisateur vers l'URL de paiement de PayTech
-//             return redirect()->away($response['data']['redirect_url']);
-//         }
-
-//         // Si la réponse PayTech n'est pas valide, rediriger avec une erreur
-//         return redirect()->route('commnandes.create')
-//             ->with('error', 'Erreur PayTech: ' . ($response['message'] ?? 'Erreur inconnue'))
-//             ->withInput();
-
-//     } catch (\Exception $e) {
-//         // Log des erreurs pour faciliter le débogage
-//         Log::error('Erreur lors de la création de la requête PayTech:', [
-//             'message' => $e->getMessage(),
-//             'stack' => $e->getTraceAsString(),
-//         ]);
-
-//         // Rediriger avec un message d'erreur générique
-//         return redirect()->route('commnandes.create')
-//             ->with('error', 'Erreur interne: ' . $e->getMessage())
-//             ->withInput();
-//     }
-// }
-private function redirectToPaytech(Commnande $commande)
-{
-    // Toujours forcer HTTPS pour les URLs, quelle que soit l'environnement
-    $baseUrl = config('app.url');
-    // S'assurer que l'URL de base est en HTTPS
-    $baseUrl = str_replace('http://', 'https://', $baseUrl);
-    
-    // Construire les URLs en forçant HTTPS
-    $successUrl = $baseUrl . '/commnandes/payment/success';
-    $ipnUrl = $baseUrl . '/commnandes/payment/ipn';
-    $cancelUrl = $baseUrl . '/commnandes/payment/cancel';
-
-    // Construction des données pour la requête de paiement
-    $paymentData = [
-        'item_name' => 'Livraison ' . $commande->reference,
-        'item_price' => number_format($commande->prix_final, 2, '.', ''),
-        'ref_command' => $commande->reference,
-        'command_name' => 'Livraison ' . $commande->type_colis,
-        'success_url' => $successUrl,
-        'ipn_url' => $ipnUrl,
-        'cancel_url' => $cancelUrl,
-        'custom_field' => [  // Envoyez directement un tableau, le service se chargera de l'encoder
-            'commande_id' => $commande->id,
-            'user_id' => $commande->user_id,
-            'mode_paiement' => $commande->mode_paiement
-        ]
-    ];
-
-    // Log les données qui seront envoyées à PayTech
-    Log::info('Données envoyées à PayTech:', [
-        'paymentData' => $paymentData,
-        'baseUrl' => $baseUrl
-    ]);
-
-    try {
-        // Appel à PayTech pour créer la requête de paiement
-        $response = $this->paytechService->createPaymentRequest($paymentData);
-
-        // Log de la réponse pour débogage
-        Log::info('Réponse complète PayTech:', $response);
-
-        // Vérifier simplement si la réponse est un succès ET si redirect_url existe
-        if (isset($response['success']) && $response['success'] && isset($response['data']['redirect_url'])) {
-            // Mettre à jour la commande avec les données de paiement
-            $commande->update([
-                'payment_token' => $response['data']['token'] ?? null,
-                'payment_data' => json_encode($response['data']),
-            ]);
-
-            // Rediriger l'utilisateur vers l'URL de paiement de PayTech
-            return redirect()->away($response['data']['redirect_url']);
-        } 
-        // Si c'est une réponse de succès mais sans l'URL requise
-        else if (isset($response['success']) && $response['success']) {
-            // Plus de détails dans le log pour aider au débogage
-            Log::error('Réponse PayTech sans URL de redirection:', [
-                'fullResponse' => $response,
-                'containsData' => isset($response['data']),
-                'dataType' => isset($response['data']) ? gettype($response['data']) : 'non défini'
-            ]);
-            return $this->handlePaymentError('Réponse incomplète de PayTech (URL manquante)', $commande);
-        }
-        // Si c'est une erreur explicite
-        else {
-            $errorMessage = $response['message'] ?? 'Erreur inconnue';
-            Log::error('Erreur PayTech explicite:', [
-                'errorMessage' => $errorMessage,
-                'fullResponse' => $response
-            ]);
-            return $this->handlePaymentError($errorMessage, $commande);
-        }
-    } catch (\Exception $e) {
-        // Log des erreurs pour faciliter le débogage
-        Log::error('Exception lors de la création de la requête PayTech:', [
-            'message' => $e->getMessage(),
-            'stack' => $e->getTraceAsString(),
-        ]);
-
-        return $this->handlePaymentError($e->getMessage(), $commande);
-    }
-}
-/**
- * Traite une erreur de paiement de manière standardisée
- */
-private function handlePaymentError($errorMessage, Commnande $commande)
-{
-    // Mettre à jour la commande pour indiquer l'erreur
-    $commande->update([
-        'status' => 'erreur_paiement',
-        'erreur_details' => $errorMessage
-    ]);
-
-    // Rediriger avec un message d'erreur
-    return redirect()->route('commnandes.create')
-        ->with('error', 'Erreur de paiement: ' . $errorMessage)
-        ->withInput();
-}
-
-private function formatCustomFields($fields)
-{
-    if (empty($fields)) {
-        return (object)[]; // Objet vide standardisé
-    }
-    
-    // Conversion profonde en objet si tableau multidimensionnel
-    return is_array($fields) ? json_decode(json_encode($fields)) : $fields;
-}
-    
-    /**
-     * Traiter le paiement par jetons
-     */
-    // private function processTokenPayment(Commnande $commande)
-    // {
-    //     $user = Auth::user();
-        
-    //     // Vérifier si l'utilisateur a assez de jetons
-    //     if ($user->tokens < $commande->prix_final) {
-    //         return redirect()->route('commnandes.create')
-    //             ->with('error', 'Solde de jetons insuffisant pour cette commande');
-    //     }
-        
-    //     // Déduire les jetons
-    //     $user->tokens -= $commande->prix_final;
-    //     $user->save();
-        
-    //     // Mettre à jour la commande
-    //     $commande->status = 'payee';
-    //     $commande->date_paiement = now();
-    //     $commande->save();
-        
-    //     return redirect()->route('commnandes.confirmation', $commande->id)
-    //         ->with('success', 'Paiement par jetons effectué avec succès!');
-    // }
-    
-    /**
-     * Callback IPN (Instant Payment Notification) de PayTech
-     */
-    public function ipnCallback(Request $request)
+    private function redirectToCinetPay(Commnande $commande, array $customerData = [])
     {
-        Log::info('IPN PayTech reçu', $request->all());
-        
-        $token = $request->input('token');
-        
-        if (!$token) {
-            return response()->json(['status' => 'error', 'message' => 'Token manquant'], 400);
-        }
-        
-        // Vérifier le statut du paiement
-        $statusResponse = $this->paytechService->checkPaymentStatus($token);
-        
-        if (!$statusResponse['success']) {
-            Log::error('Erreur vérification statut PayTech', $statusResponse);
-            return response()->json(['status' => 'error', 'message' => 'Erreur vérification statut'], 500);
-        }
-        
-        $paymentStatus = $statusResponse['data']['payment_status'] ?? null;
-        $commandRef = $statusResponse['data']['ref_command'] ?? null;
-        
-        if (!$commandRef) {
-            return response()->json(['status' => 'error', 'message' => 'Référence commande manquante'], 400);
-        }
-        
-        // Trouver la commande
-        $commande = Commnande::where('reference', $commandRef)->first();
-        
-        if (!$commande) {
-            return response()->json(['status' => 'error', 'message' => 'Commande non trouvée'], 404);
-        }
-        
-        // Mettre à jour le statut de la commande
-        if ($paymentStatus === 'completed') {
-            $commande->status = 'payee';
-            $commande->date_paiement = now();
-            $commande->save();
+        try {
+            // Vérifier la validité de la commande
+            if (!$commande || !$commande->id) {
+                return back()->with('error', 'Commande invalide');
+            }
+
+            $baseUrl = url('/');
+
+           
+            $urls = [
+        'success' => route('commnandes.payment.success'), 
+       'ipn' => route('commnandes.payment.ipn'),
+       'cancel' => route('commnandes.payment.cancel')
+   ];
+
+            foreach ($urls as $key => $url) {
+                if (!filter_var($url, FILTER_VALIDATE_URL)) {
+                    Log::error("Invalid URL format for $key: $url");
+                    return back()->with('error', "Configuration incorrecte: URL de $key invalide");
+                }
+            }
+
+            // Préparer les données de paiement pour CinetPay
+            $paymentData = [
+                'item_name' => 'Livraison ' . $commande->reference,
+                'item_price' => (float)$commande->prix_final,
+                'ref_command' => $commande->reference,
+                'success_url' => $urls['success'],
+                'ipn_url' => $urls['ipn'],
+                'cancel_url' => $urls['cancel'],
+                'custom_field' => [
+                    'commande_id' => $commande->id,
+                    'user_id' => $commande->user_id
+                ],
+                // Informations client pour CinetPay
+                'customer_name' => $customerData['customer_name'] ?? Auth::user()->name ?? '',
+                'customer_surname' => $customerData['customer_surname'] ?? '',
+                'customer_email' => $customerData['customer_email'] ?? Auth::user()->email ?? '',
+                'customer_phone' => $customerData['customer_phone'] ?? '',
+                'customer_address' => $commande->adresse_depart ?? '',
+                'customer_city' => $commande->region_depart ?? '',
+                'customer_country' => 'SN',
+                'customer_state' => '',
+                'customer_zip' => ''
+            ];
+
+            Log::info('CinetPay payment request data:', $paymentData);
+
+            if (empty(config('cinetpay.api_key')) || empty(config('cinetpay.site_id')) || empty(config('cinetpay.secret_key'))) {
+                Log::error('Configuration CinetPay manquante');
+                return back()->with('error', 'Erreur de configuration du système de paiement');
+            }
+
+            // Envoyer vers CinetPay
+            $response = $this->cinetPayService->createPaymentRequest($paymentData);
             
-            Log::info('Paiement complété pour la commande ' . $commande->reference);
+            if (!$response['success']) {
+                Log::error('Erreur CinetPay:', $response);
+                
+                $errorMessage = $response['message'] ?? 'Erreur de paiement inconnue';
+                
+                if (isset($response['status_code']) && $response['status_code'] === 422) {
+                    $errors = $response['errors'] ?? [];
+                    $errorList = is_array($errors) ? implode(', ', $errors) : (string)$errors;
+                    return back()->with('error', "Erreur de validation: $errorList");
+                }
+                
+                return back()->with('error', $errorMessage);
+            }
+
+            if (empty($response['data']['token']) || empty($response['data']['redirect_url'])) {
+                Log::error('Réponse CinetPay incomplète:', $response);
+                return back()->with('error', 'Réponse incomplète du système de paiement');
+            }
+
+            $commande->payment_token = $response['data']['token'];
+            $commande->save();
+
+            // Rediriger vers CinetPay
+            return redirect()->away($response['data']['redirect_url']);
+            
+        } catch (\Exception $e) {
+            Log::error('Exception CinetPay:', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
+            return back()->with('error', 'Erreur système: ' . $e->getMessage());
         }
-        
-        return response()->json(['status' => 'success', 'message' => 'IPN traité']);
     }
+
+    /**
+     * Callback IPN (Instant Payment Notification) de CinetPay
+     */
+   
+public function ipnCallback(Request $request)
+{
+    Log::info('IPN CinetPay reçu', $request->all());
+    
+    if (!app()->environment('local', 'testing')) {
+        if (!$this->cinetPayService->verifySignature($request->all())) {
+            Log::error('Signature IPN CinetPay invalide');
+            return response()->json(['status' => 'error', 'message' => 'Signature invalide'], 400);
+        }
+    }
+
+    $transactionId = $request->input('cpm_trans_id');
+    
+    if (!$transactionId) {
+        return response()->json(['status' => 'error', 'message' => 'Transaction ID manquant'], 400);
+    }
+    
+    $statusResponse = $this->cinetPayService->checkPaymentStatus($transactionId);
+    
+    if (!$statusResponse['success']) {
+        Log::error('Erreur vérification statut CinetPay', $statusResponse);
+        return response()->json(['status' => 'error', 'message' => 'Erreur vérification statut'], 500);
+    }
+    
+    $paymentStatus = $statusResponse['data']['payment_status'] ?? null;
+    
+    $metadata = $request->input('cpm_custom') ?? $statusResponse['data']['custom'] ?? '{}';
+    
+    $customData = json_decode($metadata, true);
+    $commandeId = $customData['commande_id'] ?? null;
+    
+    if (!$commandeId) {
+        return response()->json(['status' => 'error', 'message' => 'ID commande manquant'], 400);
+    }
+    
+    $commande = Commnande::find($commandeId);
+    
+    if (!$commande) {
+        return response()->json(['status' => 'error', 'message' => 'Commande non trouvée'], 404);
+    }
+    
+    if ($paymentStatus === 'completed') {
+        $commande->status = 'payee';
+        $commande->date_paiement = now();
+        $commande->save();
+        
+        Log::info('Paiement complété pour la commande ' . $commande->reference);
+    }
+    
+    return response()->json(['status' => 'success', 'message' => 'IPN traité']);
+}
     
     /**
      * Page de confirmation après paiement réussi
      */
     public function paymentSuccess(Request $request)
-    {
-        $token = $request->query('token');
-        
-        if (!$token) {
-            return redirect()->route('commnandes.index')
-                ->with('error', 'Information de paiement manquante');
-        }
-        
-        // Vérifier le statut du paiement
-        $statusResponse = $this->paytechService->checkPaymentStatus($token);
-        
-        if (!$statusResponse['success']) {
-            return redirect()->route('commnandes.index')
-                ->with('error', 'Erreur lors de la vérification du paiement');
-        }
-        
-        $paymentStatus = $statusResponse['data']['payment_status'] ?? null;
-        $commandRef = $statusResponse['data']['ref_command'] ?? null;
-        
-        // Trouver la commande
-        $commande = Commnande::where('reference', $commandRef)->first();
-        
-        if (!$commande) {
-            return redirect()->route('commnandes.index')
-                ->with('error', 'Commande non trouvée');
-        }
-        
-        // Si le paiement est réussi, rediriger vers la page de confirmation
-        if ($paymentStatus === 'completed') {
-            return redirect()->route('commnandes.confirmation', $commande->id)
-                ->with('success', 'Paiement effectué avec succès!');
-        }
-        
-        // Sinon, rediriger vers la liste des commandes avec un message
+{
+    $transactionId = $request->query('transaction_id') ?? $request->query('token');
+    
+    if (!$transactionId) {
         return redirect()->route('commnandes.index')
-            ->with('warning', 'Le statut de votre paiement est en attente de confirmation');
+            ->with('error', 'Information de paiement manquante');
     }
     
-    /**
-     * Page d'annulation de paiement
-     */
+    $statusResponse = $this->cinetPayService->checkPaymentStatus($transactionId);
+    
+    if (!$statusResponse['success']) {
+        return redirect()->route('commnandes.index')
+            ->with('error', 'Erreur lors de la vérification du paiement');
+    }
+    
+    $paymentStatus = $statusResponse['data']['payment_status'] ?? null;
+    
+    $customData = json_decode($statusResponse['data']['custom'] ?? '{}', true);
+    $commandeId = $customData['commande_id'] ?? null;
+    
+    if (!$commandeId) {
+        return redirect()->route('commnandes.index')
+            ->with('error', 'Commande non trouvée');
+    }
+    
+    $commande = Commnande::find($commandeId);
+    
+    if (!$commande) {
+        return redirect()->route('commnandes.index')
+            ->with('error', 'Commande non trouvée');
+    }
+    
+    if ($paymentStatus === 'completed') {
+        return redirect()->route('commnandes.confirmation', $commande->id)
+            ->with('success', 'Paiement effectué avec succès!');
+    }
+    
+    return redirect()->route('commnandes.index')
+        ->with('warning', 'Le statut de votre paiement est en attente de confirmation');
+}
+
+
     public function paymentCancel(Request $request)
     {
+        $transactionId = $request->query('transaction_id') ?? $request->query('token');
+        
+        if ($transactionId) {
+            $statusResponse = $this->cinetPayService->checkPaymentStatus($transactionId);
+            if ($statusResponse['success']) {
+                $customData = json_decode($statusResponse['data']['custom'] ?? '{}', true);
+                $commandeId = $customData['commande_id'] ?? null;
+                
+                if ($commandeId) {
+                    Log::info("Paiement annulé pour la commande $commandeId");
+                }
+            }
+        }
+        
         return redirect()->route('commnandes.index')
             ->with('error', 'Le paiement a été annulé');
     }
-    
+
     /**
-     * Page de confirmation après commande
+     * Diagnostic CinetPay (pour le débogage)
      */
-    public function confirmation($id)
+    public function diagnosticCinetPay()
     {
-        $commande = Commnande::findOrFail($id);
-        
-        // Vérifier que l'utilisateur est le propriétaire de la commande
-        if ($commande->user_id !== Auth::id()) {
-            abort(403, 'Non autorisé');
+        if (app()->environment('production')) {
+            abort(403, 'Non autorisé en production');
         }
-        
-        return view('commnandes.confirmation', compact('commande'));
+
+        $config = [
+            'site_id_present' => !empty(config('cinetpay.site_id')),
+            'api_key_present' => !empty(config('cinetpay.api_key')),
+            'secret_key_present' => !empty(config('cinetpay.secret_key')),
+            'base_url' => config('cinetpay.base_url'),
+            'currency' => config('cinetpay.currency'),
+            'env' => config('cinetpay.env'),
+            'app_env' => app()->environment(),
+            'app_url' => config('app.url'),
+        ];
+
+        $testData = [
+            'item_name' => 'Diagnostic CinetPay',
+            'item_price' => '10.00',
+            'ref_command' => 'DIAG-' . uniqid(),
+            'command_name' => 'Test Diagnostic',
+            'success_url' => url('/diagnostic-success'),
+            'ipn_url' => url('/diagnostic-ipn'),
+            'cancel_url' => url('/diagnostic-cancel'),
+            'custom_field' => [
+                'test' => true,
+                'timestamp' => time()
+            ],
+            'customer_name' => 'Test',
+            'customer_surname' => 'User',
+            'customer_email' => 'test@example.com',
+            'customer_phone' => '770000000'
+        ];
+
+        $results = [];
+
+        $results['config_check'] = $this->checkCinetPayConfig();
+
+        $results['connectivity'] = $this->testConnectivity(config('cinetpay.base_url'));
+
+        $results['json_test'] = $this->testCinetPayRequest($testData, 'json');
+
+        return view('diagnostics.cinetpay', [
+            'config' => $config,
+            'results' => $results,
+            'testData' => $testData,
+        ]);
     }
 
     /**
-     * Calcule le prix final en ajoutant le supplément selon le type de livraison.
+     * Vérifie la configuration CinetPay
      */
+    private function checkCinetPayConfig()
+    {
+        $issues = [];
+        
+        if (empty(config('cinetpay.site_id'))) {
+            $issues[] = "Site ID manquant";
+        }
+        
+        if (empty(config('cinetpay.api_key'))) {
+            $issues[] = "Clé API manquante";
+        }
+        
+        if (empty(config('cinetpay.secret_key'))) {
+            $issues[] = "Secret API manquant";
+        }
+        
+        if (empty(config('cinetpay.base_url'))) {
+            $issues[] = "URL de base non configurée";
+        }
+        
+        if (!empty(config('cinetpay.base_url'))) {
+            try {
+                $result = Http::timeout(5)->get(config('cinetpay.base_url'));
+                if ($result->failed()) {
+                    $issues[] = "L'URL de base ne répond pas: " . $result->status();
+                }
+            } catch (\Exception $e) {
+                $issues[] = "Impossible de se connecter à l'URL de base: " . $e->getMessage();
+            }
+        }
+        
+        return [
+            'success' => empty($issues),
+            'issues' => $issues
+        ];
+    }
+
+    /**
+     * Teste une requête CinetPay
+     */
+    private function testCinetPayRequest($data, $method = 'json')
+    {
+        try {
+            $start = microtime(true);
+            
+            $result = $this->makeJsonCinetPayRequest($data);
+            
+            $time = round((microtime(true) - $start) * 1000);
+            
+            return array_merge($result, [
+                'time_ms' => $time
+            ]);
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Exception: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Crée une requête JSON CinetPay
+     */
+    private function makeJsonCinetPayRequest($data)
+    {
+        $endpoint = config('cinetpay.base_url') . '/payment/request-payment';
+        
+        $payload = [
+            'amount' => $data['item_price'],
+            'currency' => config('cinetpay.currency', 'XOF'),
+            'site_id' => config('cinetpay.site_id'),
+            'transaction_id' => $data['ref_command'],
+            'description' => $data['command_name'],
+            'return_url' => $data['success_url'],
+            'notify_url' => $data['ipn_url'],
+            'customer_name' => $data['customer_name'],
+            'customer_surname' => $data['customer_surname'],
+            'customer_email' => $data['customer_email'],
+            'customer_phone' => $data['customer_phone'],
+            'metadata' => json_encode($data['custom_field'])
+        ];
+        
+        $response = Http::withOptions([
+            'verify' => app()->environment('local') ? false : true,
+            'timeout' => 10,
+        ])->withHeaders([
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer '.config('cinetpay.api_key')
+        ])->post($endpoint, $payload);
+        
+        return [
+            'success' => $response->successful(),
+            'status' => $response->status(),
+            'response' => $response->json() ?: ['raw' => $response->body()]
+        ];
+    }
+
+    /**
+     * Teste la connectivité à une URL
+     */
+    private function testConnectivity($url)
+    {
+        try {
+            $start = microtime(true);
+            $response = Http::timeout(5)->get($url);
+            $time = round((microtime(true) - $start) * 1000); 
+            
+            return [
+                'success' => $response->successful(),
+                'status' => $response->status(),
+                'time_ms' => $time,
+                'message' => $response->successful() ? 'Connexion réussie' : 'Échec de connexion'
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Erreur: ' . $e->getMessage()
+            ];
+        }
+    }
+
     private function calculerPrixAvecSupplement($prixBase, $typeLivraison)
     {
         if ($typeLivraison === 'express') {
@@ -448,7 +546,6 @@ private function formatCustomFields($fields)
      */
     private function findTarifSansLivraison($regionDepart, $regionArrivee, $typeColis)
     {
-        // Trouver d'abord la zone correspondante
         $zone = Zone::where('region_depart', $regionDepart)
                    ->where('region_arrivee', $regionArrivee)
                    ->first();
@@ -457,14 +554,11 @@ private function formatCustomFields($fields)
             return null;
         }
         
-        // Rechercher le tarif correspondant (sans type_livraison)
         $tarif = Tarif::where(function($query) use ($zone, $regionDepart, $regionArrivee) {
-                // Chercher par type_zone si disponible
                 if (!empty($zone->type_zone)) {
                     $query->where('type_zone', $zone->type_zone)
                           ->orWhere('zone', $zone->type_zone);
                 }
-                // Ou chercher directement par région
                 $query->orWhere('zone', $regionDepart)
                       ->orWhere('zone', $regionArrivee);
             })
@@ -477,263 +571,97 @@ private function formatCustomFields($fields)
     /**
      * Extrait la région à partir d'une adresse.
      */
-    private function extraireRegion($adresse)
-    {
-        // Récupérer toutes les régions connues
-        $regions = Zone::select('region_depart')
-            ->union(Zone::select('region_arrivee'))
-            ->pluck('region_depart')
-            ->unique()
-            ->toArray();
-
-        // Normaliser l'adresse
-        $adresseNorm = $this->normaliserTexte($adresse);
-
-        // Parcourir les régions pour trouver une correspondance
-        foreach ($regions as $region) {
-            if (strpos($adresseNorm, $this->normaliserTexte($region)) !== false) {
-                return $region;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Normalise le texte (retire les accents, met en minuscule).
-     */
     private function normaliserTexte($texte)
     {
-        // Mettre en minuscule
         $texte = strtolower($texte);
-
-        // Retirer les accents
-        $texte = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $texte);
-
-        return $texte;
+        $texte = iconv('UTF-8', 'ASCII//TRANSLIT', $texte); 
+        $texte = preg_replace('/[^a-z0-9\s]/', '', $texte); 
+        return trim($texte);
     }
+    
+    private function extraireRegion($adresse)
+{
+    
+    $regions = Zone::select('region_depart')
+        ->union(Zone::select('region_arrivee'))
+        ->pluck('region_depart')
+        ->unique()
+        ->toArray();
+
+    $adresseNorm = $this->normaliserTexte($adresse);
+    $meilleureCorrespondance = null;
+    $scoreMax = 0;
+
+    foreach ($regions as $region) {
+        $regionNorm = $this->normaliserTexte($region);
+        similar_text($adresseNorm, $regionNorm, $pourcentage);
+
+        if ($pourcentage > $scoreMax) {
+            $scoreMax = $pourcentage;
+            $meilleureCorrespondance = $region;
+        }
+    }
+
+    if ($meilleureCorrespondance === null || $scoreMax < 70) {
+        $distanceMin = PHP_INT_MAX;
+
+        foreach ($regions as $region) {
+            $regionNorm = $this->normaliserTexte($region);
+            $distance = levenshtein($adresseNorm, $regionNorm);
+
+            // Si la distance est acceptable (maximum 3 erreurs)
+            if ($distance < $distanceMin && $distance <= 3) {
+                $distanceMin = $distance;
+                $meilleureCorrespondance = $region;
+            }
+        }
+    }
+
+    
+    if ($meilleureCorrespondance === null) {
+        return null; 
+    }
+
+    
+    return $meilleureCorrespondance;
+}
+
 
     public function index()
     {
-        // Récupérer les commandes de l'utilisateur connecté
         $commnandes = Commnande::where('user_id', Auth::id())->latest()->get();
-
+    
         return view('commnandes.index', compact('commnandes'));
     }
-
-    public function diagnosticPaytech()
+    
+public function show(Commnande $commnande)
 {
-    // Restreindre aux environnements non-production
-    if (app()->environment('production')) {
-        abort(403, 'Non autorisé en production');
+    if ($commnande->user_id !== auth()->id()) {
+        abort(403);
     }
 
-    // Récupérer les informations de configuration
-    $config = [
-        'api_key_present' => !empty(config('paytech.api_key')),
-        'api_secret_present' => !empty(config('paytech.api_secret')),
-        'base_url' => config('paytech.base_url'),
-        'currency' => config('paytech.currency'),
-        'env' => config('paytech.env'),
-        'app_env' => app()->environment(),
-        'app_url' => config('app.url'),
-    ];
-
-    // Données de test minimales
-    $testData = [
-        'item_name' => 'Diagnostic PayTech',
-        'item_price' => '10.00',
-        'ref_command' => 'DIAG-' . uniqid(),
-        'command_name' => 'Test Diagnostic',
-        'success_url' => url('/diagnostic-success'),
-        'ipn_url' => url('/diagnostic-ipn'),
-        'cancel_url' => url('/diagnostic-cancel'),
-        'custom_field' => [
-            'test' => true,
-            'timestamp' => time()
-        ]
-    ];
-
-    $results = [];
-
-    // Test 1: Vérification de la configuration
-    $results['config_check'] = $this->checkConfig();
-
-    // Test 2: Test de connectivité au serveur
-    $results['connectivity'] = $this->testConnectivity(config('paytech.base_url'));
-
-    // Test 3: Test simple avec méthode JSON
-    $results['json_test'] = $this->testPaytechRequest($testData, 'json');
-
-    // Test 4: Test avec méthode form-urlencoded
-    $results['form_test'] = $this->testPaytechRequest($testData, 'form');
-
-    return view('diagnostics.paytech', [
-        'config' => $config,
-        'results' => $results,
-        'testData' => $testData,
-    ]);
+    return view('commnandes.show', compact('commnande'));
 }
 
-/**
- * Vérifie la configuration PayTech
- */
-private function checkConfig()
-{
-    $issues = [];
-    
-    if (empty(config('paytech.api_key'))) {
-        $issues[] = "Clé API manquante";
-    }
-    
-    if (empty(config('paytech.api_secret'))) {
-        $issues[] = "Secret API manquant";
-    }
-    
-    if (empty(config('paytech.base_url'))) {
-        $issues[] = "URL de base non configurée";
-    }
-    
-    // Vérifier si l'URL est accessible
-    if (!empty(config('paytech.base_url'))) {
-        try {
-            $result = Http::timeout(5)->get(config('paytech.base_url'));
-            if ($result->failed()) {
-                $issues[] = "L'URL de base ne répond pas: " . $result->status();
-            }
-        } catch (\Exception $e) {
-            $issues[] = "Impossible de se connecter à l'URL de base: " . $e->getMessage();
-        }
-    }
-    
-    return [
-        'success' => empty($issues),
-        'issues' => $issues
-    ];
-}
-
-/**
- * Teste la connectivité à une URL
- */
-private function testConnectivity($url)
-{
-    try {
-        $start = microtime(true);
-        $response = Http::timeout(5)->get($url);
-        $time = round((microtime(true) - $start) * 1000); // En millisecondes
+ public function confirmation($id)
+    {
+        $commande = Commnande::findOrFail($id);
         
-        return [
-            'success' => $response->successful(),
-            'status' => $response->status(),
-            'time_ms' => $time,
-            'message' => $response->successful() ? 'Connexion réussie' : 'Échec de connexion'
-        ];
-    } catch (\Exception $e) {
-        return [
-            'success' => false,
-            'message' => 'Erreur: ' . $e->getMessage()
-        ];
-    }
-}
-
-/**
- * Teste une requête PayTech
- */
-private function testPaytechRequest($data, $method = 'json')
-{
-    try {
-        $start = microtime(true);
-        
-        if ($method === 'json') {
-            $result = $this->makeJsonPaytechRequest($data);
-        } else {
-            $result = $this->makeFormPaytechRequest($data);
+        if ($commande->user_id !== Auth::id()) {
+            abort(403, 'Non autorisé');
         }
         
-        $time = round((microtime(true) - $start) * 1000); // En millisecondes
-        
-        return array_merge($result, [
-            'time_ms' => $time
-        ]);
-    } catch (\Exception $e) {
-        return [
-            'success' => false,
-            'message' => 'Exception: ' . $e->getMessage()
-        ];
+        return view('commnandes.confirmation', compact('commande'));
     }
-}
 
-/**
- * Crée une requête JSON PayTech
- */
-private function makeJsonPaytechRequest($data)
+public function indexLivreur()
 {
-    $endpoint = config('paytech.base_url') . '/payment/request-payment';
-    
-    // Formater les données
-    $payload = [
-        'item_name' => $data['item_name'],
-        'item_price' => $data['item_price'],
-        'currency' => config('paytech.currency', 'XOF'),
-        'ref_command' => $data['ref_command'],
-        'command_name' => $data['command_name'],
-        'env' => config('paytech.env', 'test'),
-        'success_url' => $data['success_url'],
-        'ipn_url' => $data['ipn_url'],
-        'cancel_url' => $data['cancel_url'],
-        'custom_field' => json_encode($data['custom_field'])
-    ];
-    
-    $response = Http::withOptions([
-        'verify' => app()->environment('local') ? false : true,
-        'timeout' => 10,
-    ])->withHeaders([
-        'API_KEY' => config('paytech.api_key'),
-        'API_SECRET' => config('paytech.api_secret'),
-        'Content-Type' => 'application/json',
-    ])->post($endpoint, $payload);
-    
-    return [
-        'success' => $response->successful(),
-        'status' => $response->status(),
-        'response' => $response->json() ?: ['raw' => $response->body()]
-    ];
-}
+    $commandes = Commnande::where('driver_id', Auth::id())
+                 ->whereIn('status', ['acceptée', 'en cours'])
+                 ->latest()
+                 ->get();
 
-/**
- * Crée une requête FORM PayTech
- */
-private function makeFormPaytechRequest($data)
-{
-    $endpoint = config('paytech.base_url') . '/payment/request-payment';
-    
-    // Formater les données
-    $payload = [
-        'item_name' => $data['item_name'],
-        'item_price' => $data['item_price'],
-        'currency' => config('paytech.currency', 'XOF'),
-        'ref_command' => $data['ref_command'],
-        'command_name' => $data['command_name'],
-        'env' => config('paytech.env', 'test'),
-        'success_url' => $data['success_url'],
-        'ipn_url' => $data['ipn_url'],
-        'cancel_url' => $data['cancel_url'],
-        'custom_field' => json_encode($data['custom_field'])
-    ];
-    
-    $response = Http::withOptions([
-        'verify' => app()->environment('local') ? false : true,
-        'timeout' => 10,
-    ])->withHeaders([
-        'API_KEY' => config('paytech.api_key'),
-        'API_SECRET' => config('paytech.api_secret'),
-        'Content-Type' => 'application/x-www-form-urlencoded',
-    ])->asForm()->post($endpoint, $payload);
-    
-    return [
-        'success' => $response->successful(),
-        'status' => $response->status(),
-        'response' => $response->json() ?: ['raw' => $response->body()]
-    ];
+    return view('livreur.commandes.index', compact('commandes'));
 }
+    
 }

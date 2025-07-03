@@ -6,8 +6,8 @@
 <div class="card">
     <div class="card-header">
         <div class="d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Liste des Tarifs de Livraison</h5>
-            <a href="{{ route('admin.tarifs.create') }}" class="btn btn-primary">
+            <h5 class="mb-0 fw-bold">Liste des Tarifs de Livraison</h5>
+            <a href="{{ route('admin.tarifs.create') }}" class="btn btn-danger fw-bold">
                 <i class="fas fa-plus"></i> Ajouter un Tarif
             </a>
         </div>
@@ -72,7 +72,7 @@
                         <td>{{ number_format($tarif->prix, 0, ',', ' ') }}</td>
                         <td>
                             <a href="{{ route('admin.tarifs.edit', $tarif->id) }}" 
-                               class="btn btn-sm btn-outline-primary" title="Modifier">
+                               class="btn btn-sm btn-outline-danger" title="Modifier">
                                 <i class="fas fa-edit"></i>
                             </a>
                             <form action="{{ route('admin.tarifs.destroy', $tarif->id) }}" 
@@ -143,15 +143,22 @@ $(document).ready(function() {
 @section('styles')
 <style>
     .tarif-row:hover {
-        background-color: #f8f9fa;
+        background-color: #ffe5e5; /* rouge très clair */
         transition: background-color 0.2s ease;
     }
     .table-responsive {
         min-height: 300px;
     }
     .pagination .page-item.active .page-link {
-        background-color: #0d6efd;
-        border-color: #0d6efd;
+        background-color: #dc3545; /* Bootstrap danger */
+        border-color: #dc3545;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.25rem rgba(220,53,69,.25);
+    }
+    .fw-bold {
+        font-weight: 700 !important;
     }
 </style>
 @endsection

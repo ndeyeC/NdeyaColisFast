@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="card">
-    <div class="card-header bg-primary text-white">
+  <div class="card-header bg-danger text-white fw-bold">
         <h5 class="mb-0">Modifier le tarif #{{ $tarif->id }}</h5>
     </div>
     <div class="card-body">
@@ -120,7 +120,7 @@
                 <a href="{{ route('admin.tarifs.index') }}" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left"></i> Annuler
                 </a>
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn btn-danger fw-bold">
                     <i class="fas fa-save"></i> Mettre à jour
                 </button>
             </div>

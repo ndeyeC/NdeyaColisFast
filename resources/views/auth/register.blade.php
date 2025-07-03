@@ -2,31 +2,11 @@
     <!-- Section de gauche avec texte et image d'arrière-plan (50%) -->
     <div class="w-full md:w-1/2 bg-indigo-600 flex items-center justify-center p-8 text-white relative mt-8">
         <!-- Image d'arrière-plan -->
-        <div class="absolute inset-0 z-0 opacity-20" style="background-image: url('{{ asset('image/logo1.png') }}'); background-size: cover; background-position: center; width: 110%;height:85%;"></div>
+        <div class="absolute inset-0 z-0 opacity-20" style="background-image: url('{{ asset('image/colis.jpg') }}'); background-size: cover; background-position: center; width: 110%;height:85%;"></div>
         
         <!-- Contenu centré -->
         <div class="max-w-md z-10 relative flex flex-col items-center justify-center text-center min-h-[80vh] mx-auto">
-        <p class="mb-6 text-lg">Livraison rapide et sécurisée partout au Sénégal. Suivez vos colis en temps réel et profitez d'un service client de qualité.</p>
-        <ul class="space-y-4">
-                <li class="flex items-center justify-center">
-                    <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                    </svg>
-                    Livraison express en 24h
-                </li>
-                <li class="flex items-center justify-center">
-                    <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                    </svg>
-                    Suivi en temps réel
-                </li>
-                <li class="flex items-center justify-center">
-                    <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                    </svg>
-                    Paiement sécurisé
-                </li>
-            </ul>
+        <p class="mb-6 text-lg"></p>
         </div>
     </div>
 

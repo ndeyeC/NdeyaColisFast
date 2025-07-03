@@ -11,8 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('commnandes', function (Blueprint $table) {
-            $table->string('reference')->unique();
+        Schema::table('evaluations', function (Blueprint $table) {
+            $table->unsignedBigInteger('id_commande')->after('id');
+           $table->foreign('id_commande')->references('id')->on('commnandes')->onDelete('cascade');
 
         });
     }
@@ -22,9 +23,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('commnandes', function (Blueprint $table) {
-            $table->dropColumn('reference');
-
+        Schema::table('evaluations', function (Blueprint $table) {
+            //
         });
     }
 };

@@ -123,17 +123,17 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('admin.livraisons.*') ? 'active' : '' }}" href="{{ route('admin.livraisons.index') }}">
+                            <a class="nav-link {{ request()->routeIs('admin.livraisons.index') ? 'active' : '' }}" href="{{ route('admin.livraisons.index') }}">
                                 <i class="fas fa-truck me-2"></i>
                                 Suivi des livraisons
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <!-- <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('admin.statistiques.*') ? 'active' : '' }}" href="{{ route('admin.statistiques.index') }}">
                                 <i class="fas fa-chart-bar me-2"></i>
                                 Statistiques
                             </a>
-                        </li>
+                        </li> -->
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('admin.communications.index') ? 'active' : '' }}" href="{{ route('admin.communications.index') }}">
                                 <i class="fas fa-comments me-2"></i>
@@ -141,12 +141,28 @@
                             </a>
                         </li>
                     </ul>
+<li class="nav-item">
+    <a href="{{ route('logout') }}" 
+       onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
+       class="nav-link">
+        <i class="fas fa-sign-out-alt me-2"></i>
+        Déconnexion
+    </a>
+</li>
+
+
+<!-- Formulaire caché pour la déconnexion -->
+<form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">
+    @csrf
+</form>
                     
-                    <hr class="text-white-50">
+  <hr class="text-white-50">
                     
                     
-                </div>
-            </div>
+     </div>
+                
+     </div>
+            
             
             <!-- Main content -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
@@ -185,5 +201,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ asset('js/admin.js') }}"></script>
     @yield('scripts')
+    @stack('scripts')
+
 </body>
 </html>

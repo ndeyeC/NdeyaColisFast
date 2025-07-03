@@ -24,7 +24,6 @@ class DeliveryController extends Controller
             ], 400);
         }
         
-        // Créer la livraison
         $delivery = Delivery::create([
             'user_id' => $user->id,
             'pickup_address' => $request->pickup_address,
@@ -34,7 +33,6 @@ class DeliveryController extends Controller
             'cost_in_tokens' => $deliveryCostInTokens
         ]);
         
-        // Débiter les jetons
         $user->tokens()->create([
             'amount' => -$deliveryCostInTokens,
             'payment_method' => 'tokens',

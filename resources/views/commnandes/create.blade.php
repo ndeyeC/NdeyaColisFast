@@ -2,9 +2,19 @@
 
 @section('title', 'Nouvelle Commande')
 
+
 @section('content')
 
 <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow">
+
+<div class="mb-4">
+        <a href="{{ url()->previous() }}" class="text-gray-600 hover:text-gray-900 inline-flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+            </svg>
+            Retour
+        </a>
+    </div>
     <h2 class="text-2xl font-bold mb-4">Créer une nouvelle commande</h2>
 
     {{-- Messages de session --}}
@@ -34,15 +44,38 @@
     <form action="{{ route('commnandes.store') }}" method="POST">
         @csrf
 
-        <div class="mb-4">
-            <label class="block font-medium">Adresse de départ</label>
-            <input type="text" name="adresse_depart" class="w-full p-3 border rounded" value="{{ old('adresse_depart') }}" required>
-        </div>
+        {{-- Champ départ avec suggestions --}}
+<div class="mb-4 relative">
+    <label class="block font-medium">Adresse de départ</label>
+    <input type="text" name="adresse_depart" id="adresse_depart" class="w-full p-3 border rounded" value="{{ old('adresse_depart') }}" required>
+    <ul id="suggestions_depart" class="absolute z-10 bg-white border rounded w-full mt-1"></ul>
+</div>
 
-        <div class="mb-4">
-            <label class="block font-medium">Adresse de destination</label>
-            <input type="text" name="adresse_arrivee" class="w-full p-3 border rounded" value="{{ old('adresse_arrivee') }}" required>
-        </div>
+{{-- Champ pour les détails de l'adresse de départ --}}
+<div id="precisions_depart_box" class="mb-4" style="display: none;">
+    <label class="block font-medium">Précisez l'adresse exacte à <span id="ville_depart_label"></span></label>
+    <input type="text" name="details_adresse_depart" class="w-full p-3 border rounded" value="{{ old('details_adresse_depart') }}">
+</div>
+
+{{-- Champ arrivée avec suggestions --}}
+<div class="mb-4 relative">
+    <label class="block font-medium">Adresse de destination</label>
+    <input type="text" name="adresse_arrivee" id="adresse_arrivee" class="w-full p-3 border rounded" value="{{ old('adresse_arrivee') }}" required>
+    <ul id="suggestions_arrivee" class="absolute z-10 bg-white border rounded w-full mt-1"></ul>
+</div>
+
+{{-- Champ pour les détails de l'adresse d'arrivée --}}
+<div id="precisions_arrivee_box" class="mb-4" style="display: none;">
+    <label class="block font-medium">Précisez l'adresse exacte à <span id="ville_arrivee_label"></span></label>
+    <input type="text" name="details_adresse_arrivee" class="w-full p-3 border rounded" value="{{ old('details_adresse_arrivee') }}">
+</div>
+
+        @if(session('adresse_error'))
+    <div class="bg-yellow-100 text-yellow-800 p-3 rounded mb-4">
+        {{ session('adresse_error') }}
+    </div>
+@endif
+
 
         <div class="mb-4">
             <label class="block font-medium">Type de colis</label>
@@ -77,7 +110,6 @@
           <!-- Section de paiement -->
         <div class="mb-6">
             <h3 class="font-medium mb-3 flex items-center">
-                <span class="w-6 h-6 rounded-full bg-green-600 text-white flex items-center justify-center mr-2">3</span>
                 Méthode de paiement
             </h3>
             
@@ -116,14 +148,12 @@
                 </label> -->
             </div>
             
-            <div class="mt-4 bg-blue-50 p-3 rounded text-sm text-blue-800">
-                <p><i class="fas fa-info-circle mr-1"></i> En sélectionnant Wave ou Orange Money, vous serez redirigé vers la plateforme de paiement sécurisée PayTech.</p>
-            </div>
+           
         </div>
+     <button type="submit" class="w-full bg-red-600 text-white py-3 rounded font-bold">
+    Confirmer la commande
+    </button>
 
-        <button type="submit" class="w-full bg-green-600 text-white py-3 rounded font-bold">
-            Confirmer la commande
-        </button>
     </form>
 </div>
 
@@ -131,6 +161,11 @@
 
 
 <script>
+
+
+
+
+
 document.addEventListener('DOMContentLoaded', function() {
     // 1. Initialisation des données avec vérification de null
     const tarifs = @json($tarifs ?? []);
@@ -223,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Zone trouvée:', zone);
 
         if (!zone) {
-            elements.prixAffichage.value = 'Zone non couverte';
+            elements.prixAffichage.value = 'Nous ne livrons pas actuellement dans ces zone.';
             return;
         }
         
@@ -333,7 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 6. Écouteurs d'événements
+    // 6. Écouteurs d'événements pour le calcul de prix
     const inputs = [
         '[name="type_colis"]',
         '[name="type_livraison"]', 
@@ -351,6 +386,111 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 7. Calcul initial avec délai pour s'assurer que tout est chargé
     setTimeout(calculerPrix, 500);
+
+    // 8. Suggestions d'adresse basées sur les régions connues
+    function setupSuggestion(inputId, suggestionsBoxId) {
+        const input = document.getElementById(inputId);
+        const suggestionsBox = document.getElementById(suggestionsBoxId);
+
+        input.addEventListener('input', function () {
+            const valeur = normaliserTexte(input.value);
+            suggestionsBox.innerHTML = '';
+
+            if (valeur.length < 2) return;
+
+            const suggestions = regionsConnues.filter(region =>
+                normaliserTexte(region).includes(valeur)
+            );
+
+            suggestions.forEach(region => {
+                const item = document.createElement('li');
+                item.textContent = region;
+                item.className = 'p-2 hover:bg-gray-100 cursor-pointer';
+
+                // Utiliser mousedown au lieu de click
+                item.addEventListener('mousedown', function (e) {
+                    e.preventDefault(); // empêche le blur de s'exécuter avant
+                    input.value = region;
+                    suggestionsBox.innerHTML = '';
+                    
+                    // Déclencher manuellement l'événement change pour activer l'affichage du champ de précision
+                    const changeEvent = new Event('change');
+                    input.dispatchEvent(changeEvent);
+                    
+                    calculerPrix(); // recalcul après sélection
+                });
+
+                suggestionsBox.appendChild(item);
+            });
+        });
+
+        // Cacher les suggestions quand on sort du champ
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                suggestionsBox.innerHTML = '';
+            }, 200); // délai pour permettre le clic
+        });
+    }
+
+    // Appel pour les deux champs
+    setupSuggestion('adresse_depart', 'suggestions_depart');
+    setupSuggestion('adresse_arrivee', 'suggestions_arrivee');
+
+    // 9. Fonction pour afficher ou cacher le champ de précision
+    function afficherChampPrecision(adresse, boxId, labelId) {
+        const region = extraireRegionDepuisAdresse(adresse);
+        console.log("Région trouvée :", region); // Debug
+        const box = document.getElementById(boxId);
+        const label = document.getElementById(labelId);
+
+        if (region) {
+            // Mise à jour du span, pas du label entier
+            label.textContent = region;
+            box.style.display = 'block';
+        } else {
+            box.style.display = 'none';
+        }
+    }
+
+    // 10. Configurez les écouteurs d'événements pour les champs de précision
+    function setupPrecisions(inputId, boxId, labelId) {
+        const input = document.getElementById(inputId);
+        
+        // Réagir à la saisie
+        input.addEventListener('input', function() {
+            afficherChampPrecision(this.value, boxId, labelId);
+        });
+        
+        // Réagir au changement (utile après sélection dans la liste)
+        input.addEventListener('change', function() {
+            afficherChampPrecision(this.value, boxId, labelId);
+        });
+        
+        // Vérifier également lors du chargement initial si une valeur existe déjà
+        if (input.value) {
+            afficherChampPrecision(input.value, boxId, labelId);
+        }
+    }
+
+    // Appliquer aux deux champs
+    setupPrecisions('adresse_depart', 'precisions_depart_box', 'ville_depart_label');
+    setupPrecisions('adresse_arrivee', 'precisions_arrivee_box', 'ville_arrivee_label');
+
+    // 11. Vérifier s'il y a des valeurs déjà présentes au chargement (par exemple après validation)
+    window.addEventListener('load', function() {
+        const departValue = document.getElementById('adresse_depart').value;
+        const arriveeValue = document.getElementById('adresse_arrivee').value;
+        
+        if (departValue) {
+            afficherChampPrecision(departValue, 'precisions_depart_box', 'ville_depart_label');
+        }
+        
+        if (arriveeValue) {
+            afficherChampPrecision(arriveeValue, 'precisions_arrivee_box', 'ville_arrivee_label');
+        }
+    });
 });
 </script>
+
+
 @endsection

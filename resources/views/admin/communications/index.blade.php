@@ -6,36 +6,38 @@
 <div class="row">
     <div class="col-md-3">
         <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header text-white" style="background-color: #6c757d;">
                 <h5 class="mb-0">Conversations</h5>
             </div>
             <div class="card-body p-0">
                 <ul class="nav nav-tabs" id="conversationTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab" aria-controls="users" aria-selected="true">
+                        <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab" aria-controls="users" aria-selected="true" style="color: #495057;">
                             Clients
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="livreurs-tab" data-bs-toggle="tab" data-bs-target="#livreurs" type="button" role="tab" aria-controls="livreurs" aria-selected="false">
+                        <button class="nav-link" id="livreurs-tab" data-bs-toggle="tab" data-bs-target="#livreurs" type="button" role="tab" aria-controls="livreurs" aria-selected="false" style="color: #495057;">
                             Livreurs
                         </button>
                     </li>
                 </ul>
                 <div class="tab-content" id="conversationTabsContent">
-                    <!-- Users Tab -->
                     <div class="tab-pane fade show active" id="users" role="tabpanel" aria-labelledby="users-tab">
                         <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
                             @forelse($users as $user)
                                 <a href="#" class="list-group-item list-group-item-action conversation-item" 
                                    data-receiver-id="{{ $user->user_id }}" 
-                                   data-receiver-type="App\Models\User">
+                                   data-receiver-type="App\Models\User"
+                                   style="border-left: 3px solid transparent; transition: all 0.3s ease;">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <strong>{{ $user->name }}</strong>
+                                            <strong style="color: #495057;">{{ $user->name }}</strong>
                                             <small class="d-block text-muted">{{ $user->email }}</small>
                                         </div>
-                                        <span class="badge bg-primary rounded-pill unread-count" data-user-id="{{ $user->user_id }}">0</span>
+                                        <span class="badge rounded-pill unread-count" 
+                                              data-user-id="{{ $user->user_id }}"
+                                              style="background-color: #ffc107; color: #212529;">0</span>
                                     </div>
                                 </a>
                             @empty
@@ -45,20 +47,21 @@
                             @endforelse
                         </div>
                     </div>
-                    
-                    <!-- Livreurs Tab -->
+
                     <div class="tab-pane fade" id="livreurs" role="tabpanel" aria-labelledby="livreurs-tab">
                         <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
                             @forelse($livreurs as $livreur)
                                 <a href="#" class="list-group-item list-group-item-action livreur-item" 
-                                   data-livreur-id="{{ $livreur->user_id }}">
+                                   data-livreur-id="{{ $livreur->user_id }}"
+                                   style="border-left: 3px solid transparent; transition: all 0.3s ease;">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <strong>{{ $livreur->name }}</strong>
+                                            <strong style="color: #495057;">{{ $livreur->name }}</strong>
                                             <small class="d-block text-muted">{{ $livreur->numero_telephone }}</small>
                                             <small class="d-block text-muted">{{ $livreur->email }}</small>
                                         </div>
-                                         <span class="badge {{ $livreur->is_active ? 'bg-success' : 'bg-danger' }} rounded-pill">
+                                         <span class="badge rounded-pill" 
+                                               style="background-color: {{ $livreur->is_active ? '#28a745' : '#6c757d' }}; color: white;">
                                             {{ $livreur->is_active ? 'Actif' : 'Inactif' }}
                                         </span> 
                                     </div>
@@ -77,13 +80,15 @@
 
     <div class="col-md-6">
         <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div class="card-header text-white d-flex justify-content-between align-items-center" 
+                 style="background-color: #6c757d;">
                 <h5 class="mb-0" id="conversation-title">Messages</h5>
             </div>
             <div class="card-body">
-                <div class="chat-container" id="chat-messages" style="height: 400px; overflow-y: auto;">
+                <div class="chat-container" id="chat-messages" 
+                     style="height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; background-color: #fafafa;">
                     <div class="text-center text-muted py-5">
-                        <i class="fas fa-comments fa-3x mb-3"></i>
+                        <i class="fas fa-comments fa-3x mb-3" style="color: #6c757d;"></i>
                         <p>Sélectionnez une conversation pour afficher les messages</p>
                     </div>
                 </div>
@@ -91,12 +96,18 @@
                 <form id="message-form" class="mt-4">
                     @csrf
                     <div class="input-group">
-                        <input type="text" name="message" id="message-input" class="form-control" placeholder="Écrire un message..." required>
+                        <input type="text" name="message" id="message-input" 
+                               class="form-control" 
+                               placeholder="Écrire un message..." 
+                               required
+                               style="border: 1px solid #ced4da; border-radius: 8px 0 0 8px;">
                         <input type="hidden" name="receiver_id" id="receiver_id">
                         <input type="hidden" name="receiver_type" id="receiver_type">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-paper-plane"></i> Envoyer
-                        </button>
+                     <button type="submit" class="btn fw-bold" 
+                   style="background-color: #6c757d; border-color: #6c757d; color: white; border-radius: 0 8px 8px 0; transition: all 0.3s ease;">
+                     <i class="fas fa-paper-plane"></i> Envoyer
+                 </button>
+
                     </div>
                 </form>
             </div>
@@ -105,22 +116,27 @@
 
     <div class="col-md-3">
         <div class="card">
-            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <div class="card-header text-white d-flex justify-content-between align-items-center"
+                 style="background-color: #17a2b8;">
                 <h5 class="mb-0">Notifications ({{ $notifications->count() }})</h5>
-                <button id="mark-all-read" class="btn btn-sm btn-light">
+                <button id="mark-all-read" class="btn btn-sm" 
+                        style="background-color: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 6px;">
                     <i class="fas fa-check-double"></i>
                 </button>
             </div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush notification-container" style="max-height: 500px; overflow-y: auto;">
                     @forelse($notifications as $notification)
-                    <div class="list-group-item notification-item {{ $notification->is_read ? '' : 'fw-bold bg-light' }}"
-                         data-id="{{ $notification->id }}">
+                    <div class="list-group-item notification-item {{ $notification->is_read ? '' : 'fw-bold' }}"
+                         data-id="{{ $notification->id }}"
+                         style="{{ $notification->is_read ? '' : 'background-color: #f8f9fa; border-left: 3px solid #17a2b8;' }}">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span>{{ $notification->message }}</span>
+                            <span style="color: #495057;">{{ $notification->message }}</span>
                             <div>
                                 <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
-                                <button class="btn btn-sm btn-link text-danger notification-delete" data-id="{{ $notification->id }}">
+                                <button class="btn btn-sm btn-link notification-delete" 
+                                        data-id="{{ $notification->id }}"
+                                        style="color: #6c757d; padding: 2px 6px;">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -137,7 +153,7 @@
         </div>
         
         <div class="card mt-3" id="livreur-info-panel" style="display: none;">
-            <div class="card-header bg-info text-white">
+            <div class="card-header text-white" style="background-color: #6f42c1;">
                 <h5 class="mb-0">Détails du livreur</h5>
             </div>
             <div class="card-body">
@@ -149,20 +165,24 @@
     </div>
 </div>
 
-<!-- Livreur Details Modal -->
+<!-- Modal Détails Livreur -->
 <div class="modal fade" id="livreurDetailsModal" tabindex="-1" aria-labelledby="livreurDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+            <div class="modal-header text-white" style="background-color: #6c757d;">
                 <h5 class="modal-title" id="livreurDetailsModalLabel">Détails du livreur</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="livreur-details-content">
                 <!-- Livreur details will be loaded here -->
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-                <button type="button" class="btn btn-primary chat-with-livreur" data-bs-dismiss="modal">
+                <button type="button" class="btn" data-bs-dismiss="modal"
+                        style="background-color: #6c757d; color: white; border-radius: 6px;">
+                    Fermer
+                </button>
+                <button type="button" class="btn fw-bold chat-with-livreur" data-bs-dismiss="modal"
+                        style="background-color: #28a745; color: white; border-radius: 6px;">
                     <i class="fas fa-comments"></i> Envoyer un message
                 </button>
             </div>
@@ -170,7 +190,51 @@
     </div>
 </div>
 
+<style>
+/* Styles pour les éléments actifs et les interactions */
+.conversation-item:hover, 
+.livreur-item:hover {
+    border-left: 3px solid #6c757d !important;
+    background-color: #f8f9fa !important;
+}
+
+.conversation-item.active,
+.livreur-item.active {
+    border-left: 3px solid #28a745 !important;
+    background-color: #e8f5e8 !important;
+}
+
+.nav-tabs .nav-link.active {
+    background-color: #f8f9fa !important;
+    border-color: #dee2e6 #dee2e6 #f8f9fa !important;
+    color: #495057 !important;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: #e9ecef #e9ecef #dee2e6 !important;
+    color: #495057 !important;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.notification-item:hover {
+    background-color: #f8f9fa !important;
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
 @endsection
+
 
 
 @section('scripts')
@@ -192,7 +256,6 @@
  * pour la section communications.
  */
 
-// Attendre que le document soit prêt
 $(document).ready(function() {
     // Variables globales pour le chat
     let currentReceiverId = null;
@@ -310,7 +373,7 @@ $(document).ready(function() {
         if (!receiverId || !receiverType) {
             console.error("Pas d'ID ou de type de destinataire!");
             $('#chat-messages').html(`
-                <div class="alert alert-warning">
+                <div class="alert" style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; border-radius: 8px; padding: 16px;">
                     <p>Impossible de charger la conversation</p>
                     <small>Veuillez sélectionner un destinataire valide</small>
                 </div>
@@ -319,7 +382,7 @@ $(document).ready(function() {
         }
         
         // Montrer un indicateur de chargement
-        $('#chat-messages').html('<div class="text-center my-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Chargement des messages...</p></div>');
+        $('#chat-messages').html('<div class="text-center my-5"><div class="spinner-border" style="color: #6c757d;" role="status"></div><p class="mt-2" style="color: #6c757d;">Chargement des messages...</p></div>');
         
         // Données pour la requête
         const requestData = {
@@ -350,7 +413,7 @@ $(document).ready(function() {
                 } else {
                     console.error("La réponse n'a pas le format attendu:", response);
                     $('#chat-messages').html(`
-                        <div class="alert alert-warning">
+                        <div class="alert" style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; border-radius: 8px; padding: 16px;">
                             <p>Format de réponse incorrect</p>
                             <small>Veuillez contacter l'administrateur système</small>
                         </div>
@@ -361,7 +424,7 @@ $(document).ready(function() {
                 console.error('Erreur de chargement de la conversation', xhr.status, error);
                 console.error('Réponse:', xhr.responseText);
                 $('#chat-messages').html(`
-                    <div class="alert alert-danger">
+                    <div class="alert" style="background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 8px; padding: 16px;">
                         <p>Erreur lors du chargement des messages (${xhr.status})</p>
                         <small>${error}</small>
                     </div>
@@ -376,7 +439,7 @@ $(document).ready(function() {
         
         if (!messages || messages.length === 0) {
             html = `
-                <div class="text-center text-muted py-5">
+                <div class="text-center py-5" style="color: #6c757d;">
                     <i class="fas fa-comments fa-3x mb-3"></i>
                     <p>Aucun message dans cette conversation</p>
                 </div>
@@ -386,12 +449,21 @@ $(document).ready(function() {
                 const isSender = msg.sender_type.includes('User') && msg.sender_id == currentUserId;
                 const messageTime = new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 
+                // Couleurs douces : gris clair pour l'expéditeur, vert pâle pour le destinataire
+                const bgColor = isSender ? '#f8f9fa' : '#e8f5e8';
+                const textColor = isSender ? '#495057' : '#2d5a2d';
+                const borderColor = isSender ? '#dee2e6' : '#c3e6c3';
+                
                 html += `
-                    <div class="mb-3 p-3 rounded ${isSender ? 'bg-light' : 'bg-primary text-white fade-in'}" 
-                         style="max-width: 80%; ${isSender ? 'margin-left: auto;' : ''}">
+                    <div class="mb-3 p-3 fade-in" 
+                         style="max-width: 80%; ${isSender ? 'margin-left: auto;' : ''} 
+                                background-color: ${bgColor}; 
+                                color: ${textColor}; 
+                                border: 1px solid ${borderColor}; 
+                                border-radius: 12px;">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <strong>${isSender ? 'Vous' : (msg.sender_type.includes('User') ? 'Client' : 'Livreur')}</strong>
-                            <small>${messageTime}</small>
+                            <small style="color: #6c757d;">${messageTime}</small>
                         </div>
                         <p class="mb-0">${msg.message}</p>
                     </div>
@@ -468,10 +540,15 @@ $(document).ready(function() {
                     const messageTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     
                     const html = `
-                        <div class="mb-3 p-3 rounded bg-light fade-in" style="max-width: 80%; margin-left: auto;">
+                        <div class="mb-3 p-3 fade-in" 
+                             style="max-width: 80%; margin-left: auto; 
+                                    background-color: #f8f9fa; 
+                                    color: #495057; 
+                                    border: 1px solid #dee2e6; 
+                                    border-radius: 12px;">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <strong>Vous</strong>
-                                <small>${messageTime}</small>
+                                <small style="color: #6c757d;">${messageTime}</small>
                             </div>
                             <p class="mb-0">${msg.message}</p>
                         </div>
@@ -516,12 +593,21 @@ $(document).ready(function() {
                         const isSender = msg.sender_type.includes('User') && msg.sender_id == currentUserId;
                         const messageTime = new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                         
+                        // Couleurs douces
+                        const bgColor = isSender ? '#f8f9fa' : '#e8f5e8';
+                        const textColor = isSender ? '#495057' : '#2d5a2d';
+                        const borderColor = isSender ? '#dee2e6' : '#c3e6c3';
+                        
                         const html = `
-                            <div class="mb-3 p-3 rounded ${isSender ? 'bg-light' : 'bg-primary text-white fade-in'}" 
-                                 style="max-width: 80%; ${isSender ? 'margin-left: auto;' : ''}">
+                            <div class="mb-3 p-3 fade-in" 
+                                 style="max-width: 80%; ${isSender ? 'margin-left: auto;' : ''} 
+                                        background-color: ${bgColor}; 
+                                        color: ${textColor}; 
+                                        border: 1px solid ${borderColor}; 
+                                        border-radius: 12px;">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <strong>${isSender ? 'Vous' : (msg.sender_type.includes('User') ? 'Client' : 'Livreur')}</strong>
-                                    <small>${messageTime}</small>
+                                    <small style="color: #6c757d;">${messageTime}</small>
                                 </div>
                                 <p class="mb-0">${msg.message}</p>
                             </div>
@@ -550,7 +636,7 @@ $(document).ready(function() {
         
         if (!livreurId) {
             console.error("ID livreur manquant");
-            $('#livreur-info-content').html('<div class="alert alert-warning">ID livreur manquant</div>');
+            $('#livreur-info-content').html('<div class="alert" style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; border-radius: 8px; padding: 16px;">ID livreur manquant</div>');
             return;
         }
         
@@ -565,27 +651,27 @@ $(document).ready(function() {
                     const livreur = response.livreur;
                     let html = `
                         <div class="card-body">
-                            <h5 class="card-title">${livreur.name}</h5>
-                            <p class="card-text"><i class="fas fa-phone me-2"></i>${livreur.phone || 'Non renseigné'}</p>
-                            <p class="card-text"><i class="fas fa-envelope me-2"></i>${livreur.email}</p>
+                            <h5 class="card-title" style="color: #495057;">${livreur.name}</h5>
+                            <p class="card-text" style="color: #6c757d;"><i class="fas fa-phone me-2"></i>${livreur.phone || 'Non renseigné'}</p>
+                            <p class="card-text" style="color: #6c757d;"><i class="fas fa-envelope me-2"></i>${livreur.email}</p>
                             <p class="card-text">
-                                <i class="fas fa-circle me-2 ${livreur.is_active ? 'text-success' : 'text-danger'}"></i>
-                                ${livreur.is_active ? 'Actif' : 'Inactif'}
+                                <i class="fas fa-circle me-2 ${livreur.is_active ? 'text-success' : 'text-muted'}"></i>
+                                <span style="color: ${livreur.is_active ? '#28a745' : '#6c757d'};">${livreur.is_active ? 'Actif' : 'Inactif'}</span>
                             </p>
-                            <hr>
-                            <p class="card-text"><small class="text-muted">Livraisons effectuées: ${livreur.livraisons_count || 0}</small></p>
-                            <p class="card-text"><small class="text-muted">Évaluation moyenne: ${livreur.rating_avg || 'Aucune'}</small></p>
+                            <hr style="border-color: #dee2e6;">
+                            <p class="card-text"><small style="color: #6c757d;">Livraisons effectuées: ${livreur.livraisons_count || 0}</small></p>
+                            <p class="card-text"><small style="color: #6c757d;">Évaluation moyenne: ${livreur.rating_avg || 'Aucune'}</small></p>
                         </div>
                     `;
                     $('#livreur-info-content').html(html);
                 } else {
-                    $('#livreur-info-content').html('<div class="alert alert-warning">Informations livreur incomplètes</div>');
+                    $('#livreur-info-content').html('<div class="alert" style="background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; border-radius: 8px; padding: 16px;">Informations livreur incomplètes</div>');
                 }
             },
             error: function(xhr, status, error) {
                 console.error('Erreur de chargement des détails du livreur', xhr.status, error);
                 console.error('Réponse:', xhr.responseText);
-                $('#livreur-info-content').html(`<div class="alert alert-danger">Erreur lors du chargement des détails (${xhr.status})</div>`);
+                $('#livreur-info-content').html(`<div class="alert" style="background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 8px; padding: 16px;">Erreur lors du chargement des détails (${xhr.status})</div>`);
             }
         });
     }
@@ -637,67 +723,67 @@ $(document).ready(function() {
 
     // Supprimer une notification - Modifié avec prévention de la propagation
     $(document).on('click', '.notification-delete', function(e) {
-    e.stopPropagation();
-    e.preventDefault();
-    const notificationId = $(this).data('id');
-    const notificationElement = $(this).closest('[data-id]'); // Meilleure sélection de l'élément
-    const deleteButton = $(this); // Référence au bouton
-    
-    console.log("Tentative de suppression de notification:", notificationId);
-    
-    if (confirm('Voulez-vous supprimer cette notification ?')) {
-        // Ajout d'un indicateur de chargement
-        deleteButton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+        e.stopPropagation();
+        e.preventDefault();
+        const notificationId = $(this).data('id');
+        const notificationElement = $(this).closest('[data-id]'); // Meilleure sélection de l'élément
+        const deleteButton = $(this); // Référence au bouton
         
-        $.ajax({
-            url: `/admin/notifications/delete/${notificationId}`,
-            method: 'POST',
-            data: {
-                _token: $('meta[name="csrf-token"]').attr('content'),
-                _method: 'DELETE'
-            },
-            success: function(response) {
-                console.log("Notification supprimée avec succès:", response);
-                // Animation de disparition plus fluide
-                notificationElement.fadeOut(300, function() {
-                    $(this).remove();
-                    // Optionnel : Mettre à jour le compteur de notifications
-                    updateNotificationCount();
-                });
-            },
-            error: function(xhr, status, error) {
-                console.error('Erreur lors de la suppression:', {
-                    status: status,
-                    error: error,
-                    response: xhr.responseText
-                });
-                
-                // Réactiver le bouton
-                deleteButton.prop('disabled', false).html('<i class="fas fa-trash"></i>');
-                
-                // Message d'erreur plus informatif
-                let errorMessage = "Erreur lors de la suppression";
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage += ": " + xhr.responseJSON.message;
+        console.log("Tentative de suppression de notification:", notificationId);
+        
+        if (confirm('Voulez-vous supprimer cette notification ?')) {
+            // Ajout d'un indicateur de chargement
+            deleteButton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+            
+            $.ajax({
+                url: `/admin/notifications/delete/${notificationId}`,
+                method: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    _method: 'DELETE'
+                },
+                success: function(response) {
+                    console.log("Notification supprimée avec succès:", response);
+                    // Animation de disparition plus fluide
+                    notificationElement.fadeOut(300, function() {
+                        $(this).remove();
+                        // Optionnel : Mettre à jour le compteur de notifications
+                        updateNotificationCount();
+                    });
+                },
+                error: function(xhr, status, error) {
+                    console.error('Erreur lors de la suppression:', {
+                        status: status,
+                        error: error,
+                        response: xhr.responseText
+                    });
+                    
+                    // Réactiver le bouton
+                    deleteButton.prop('disabled', false).html('<i class="fas fa-trash"></i>');
+                    
+                    // Message d'erreur plus informatif
+                    let errorMessage = "Erreur lors de la suppression";
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage += ": " + xhr.responseJSON.message;
+                    }
+                    alert(errorMessage);
+                },
+                complete: function() {
+                    // S'assurer que le bouton est réactivé dans tous les cas
+                    deleteButton.prop('disabled', false).html('<i class="fas fa-trash"></i>');
                 }
-                alert(errorMessage);
-            },
-            complete: function() {
-                // S'assurer que le bouton est réactivé dans tous les cas
-                deleteButton.prop('disabled', false).html('<i class="fas fa-trash"></i>');
-            }
-        });
-    }
-});
+            });
+        }
+    });
 
-// Fonction optionnelle pour mettre à jour le compteur
-function updateNotificationCount() {
-    const countElement = $('.notification-count');
-    if (countElement.length) {
-        const currentCount = parseInt(countElement.text()) || 0;
-        countElement.text(Math.max(0, currentCount - 1));
+    // Fonction optionnelle pour mettre à jour le compteur
+    function updateNotificationCount() {
+        const countElement = $('.notification-count');
+        if (countElement.length) {
+            const currentCount = parseInt(countElement.text()) || 0;
+            countElement.text(Math.max(0, currentCount - 1));
+        }
     }
-}
     
     // Nouvelle fonction pour rafraîchir les compteurs de messages non lus
     function refreshUnreadCounts() {

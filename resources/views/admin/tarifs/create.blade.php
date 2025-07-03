@@ -4,8 +4,12 @@
 
 @section('content')
 <div class="card">
-    <div class="card-header bg-primary text-white">
-        <h5 class="mb-0">Nouveau tarif de livraison</h5>
+    <!-- <div class="card-header bg-primary text-white"> -->
+        <div class="card-header bg-danger text-white">
+
+        <!-- <h5 class="mb-0">Nouveau tarif de livraison</h5> -->
+             <h5 class="mb-0 fw-bold">Nouveau tarif de livraison</h5>
+
     </div>
     <div class="card-body">
         <form action="{{ route('admin.tarifs.store') }}" method="POST">
@@ -118,12 +122,18 @@
 
             <!-- Actions -->
             <div class="d-flex justify-content-between">
-                <a href="{{ route('admin.tarifs.index') }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> Annuler
+                <a href="{{ route('admin.tarifs.index') }}" class="btn btn-outline-danger fw-bold">
+               <i class="fas fa-arrow-left"></i> Annuler
                 </a>
-                <button type="submit" class="btn btn-primary">
+
+                <!-- <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> Enregistrer
-                </button>
+                </button> -->
+
+                <button type="submit" class="btn btn-danger fw-bold">
+                  <i class="fas fa-save"></i> Enregistrer
+          </button>
+
             </div>
         </form>
     </div>

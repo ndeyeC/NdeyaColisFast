@@ -21,7 +21,7 @@ class TarifController extends Controller
         return view('admin.tarifs.create', [
             'distances' => Tarif::distancesOptions(),
             'poids' => Tarif::poidsOptions(),
-            'typeZones' => Tarif::typeZoneOptions(), // Ajouté si nécessaire
+            'typeZones' => Tarif::typeZoneOptions(), 
         ]);
     }
 
@@ -49,7 +49,7 @@ class TarifController extends Controller
             'tarif' => $tarif,
             'distances' => Tarif::distancesOptions(),
             'poids' => Tarif::poidsOptions(),
-           'typeZones' => Tarif::typeZoneOptions(), // Ajouté si nécessaire
+           'typeZones' => Tarif::typeZoneOptions(), 
         ]);
     }
 

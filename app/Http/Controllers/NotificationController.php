@@ -12,7 +12,6 @@ class NotificationController extends Controller
     {
         $notification = Notification::findOrFail($id);
         
-        // Check if notification belongs to authenticated user
         if ($notification->user_id == Auth::id()) {
             $notification->update(['is_read' => true]);
             return response()->json(['success' => true]);
@@ -34,7 +33,6 @@ class NotificationController extends Controller
     {
         $notification = Notification::findOrFail($id);
         
-        // Check if notification belongs to authenticated user
         if ($notification->user_id == Auth::id()) {
             $notification->delete();
             return response()->json(['success' => true]);

@@ -31,7 +31,7 @@ class AuthenticatedSessionController extends Controller
         $user = auth()->user(); 
 
     if ($user->role === 'client') {
-        return redirect()->route('commnandes.create'); 
+        return redirect()->route('client.dashboard'); 
     } elseif ($user->role === 'livreur') {
         return redirect()->route('livreur.dashboarde'); 
     } elseif ($user->role === 'admin') {
@@ -55,6 +55,6 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
-        return redirect('login');
+        return redirect('/');
     }
 }

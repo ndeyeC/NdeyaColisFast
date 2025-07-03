@@ -11,7 +11,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+       $this->app->singleton(Firebase::class, function ($app) {
+        return (new Factory)
+            ->withServiceAccount(config('firebase.credentials'))
+            ->createMessaging();
+    });
+
     }
 
     /**
