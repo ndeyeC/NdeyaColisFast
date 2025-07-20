@@ -1,9 +1,10 @@
 <?php
+namespace App\Http\Controllers;
 
 use App\Models\Zone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-
+use App\Http\Controllers\Controller; // <-- ajoute cette ligne
 class SuggestionController extends Controller
 {
     public function getSuggestedCities(Request $request)

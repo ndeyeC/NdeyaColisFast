@@ -84,12 +84,21 @@ public static function statutsDuLivreur(): array
         'details_adresse_depart',
         'lat_depart',
         'lat_arrivee',
+        'commentaire_livraison',
         'lng_depart',
         'lng_arrivee',
         'driver_id' ,
         'temps_livraison',
         'livraison_complete',
-        'probleme_signale'
+        'probleme_signale',
+        'numero_telephone',
+        'raison_annulation',
+        'date_annulation',
+        'photo_livraison',
+        'temps_livraison',
+         'trajet_id'
+
+
 
 
 
@@ -110,7 +119,7 @@ public static function statutsDuLivreur(): array
 }
 public function deliveryRoute()
 {
-    return $this->hasOne(DeliveryRoute::class, 'commnande_id');
+    return $this->hasOne(DeliveryRoute::class, 'commande_id');
 }
 
 
@@ -129,6 +138,12 @@ public function deliveryRoute()
         return $this->hasOne(Evaluation::class, 'id_commande');
     }
 
+    public function trajet()
+{
+    return $this->belongsTo(TrajetUrbain::class, 'trajet_id');
+}
+
+
     // Scopes
     public function scopeLivreesParPeriode($query, $debut, $fin)
     {
@@ -143,6 +158,8 @@ public function deliveryRoute()
         }
         return $query;
     }
+
+    
 
     // Méthodes utilitaires
     public function isLivree(): bool

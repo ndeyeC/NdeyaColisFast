@@ -12,7 +12,7 @@ class Evaluation extends Model
     protected $table = 'evaluations';
 
     protected $fillable = [
-        'commnande_id',
+        'commande_id',
         'user_id',
         'driver_id',
         'note',
@@ -29,7 +29,7 @@ class Evaluation extends Model
     // Relations
     public function commnande()
     {
-        return $this->belongsTo(Commnande::class, 'commnande_id');
+        return $this->belongsTo(Commnande::class, 'commande_id');
     }
 
     public function user()

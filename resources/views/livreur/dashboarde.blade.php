@@ -1,7 +1,6 @@
 @extends('layouts.master')
 
 @section('title', 'Tableau de bord')
-
 @section('page-title', 'Tableau de bord')
 
 @section('content')
@@ -85,25 +84,6 @@
     </div>
 </div>
 
-<!-- Statut actuel -->
-<div class="bg-white rounded-lg shadow-md mb-6">
-    <div class="p-4 border-b border-gray-200">
-        <h2 class="text-lg font-semibold text-gray-800">Statut actuel</h2>
-    </div>
-    <div class="p-4">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center">
-                <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                <span class="text-red-600 font-medium">En ligne</span>
-            </div>
-
-            <label class="inline-flex items-center cursor-pointer">
-                <input type="checkbox" value="" class="sr-only peer" checked>
-                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
-            </label>
-        </div>
-    </div>
-</div>
 
 <!-- Livraison en cours -->
 @if($livraisonActuelle)
@@ -136,24 +116,28 @@
             </div>
 
             <div class="flex space-x-2">
-                <button class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-sm flex items-center">
-                    <i class="fas fa-navigation mr-2"></i>
-                    Navigation
-                </button>
+                <!-- ✅ Route corrigée ici -->
+                <a href="{{ route('livreur.livraison-cours') }}" 
+                   class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-sm flex items-center">
+                    <i class="fas fa-truck-moving mr-2"></i>
+                    Voir la livraison
+                </a>
                 <button class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg shadow-sm flex items-center">
                     <i class="fas fa-phone"></i>
                 </button>
             </div>
         </div>
 
-        <!-- Barre de progression -->
+        @php
+            $progress = $statistiques['taux_completion'] ?? 0;
+        @endphp
         <div class="mt-4">
             <div class="flex justify-between mb-1 text-xs text-gray-600">
                 <span>En route vers le client</span>
-                <span>65%</span>
+                <span>{{ $progress }}%</span>
             </div>
             <div class="w-full bg-gray-200 rounded-full h-2">
-                <div class="bg-red-500 h-2 rounded-full" style="width: 65%"></div>
+                <div class="bg-red-500 h-2 rounded-full" style="width: {{ $progress }}%"></div>
             </div>
         </div>
     </div>
@@ -206,6 +190,9 @@
         </div>
     </div>
 </div>
+
+
+
 @endsection
 
 @section('scripts')

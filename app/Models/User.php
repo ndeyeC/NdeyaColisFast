@@ -17,7 +17,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
       *
       * @var list<string>
       */
- use Notifiable;
 
  protected $table = 'users';
 protected $primaryKey = 'user_id';
@@ -31,7 +30,10 @@ protected $fillable = [
         'numero_telephone',
         'adress',
         'role',
-        'fcm_token'
+        'vehicule',     
+        'id_card',      
+        'fcm_token',
+        'type_livreur',
      ];
      
 
@@ -136,13 +138,29 @@ protected $fillable = [
       *
      * @return array<string, string>
      */
-    protected function casts(): array
-     {
-         return [
-             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    protected $casts = [
+    'email_verified_at' => 'datetime',
+    'password' => 'hashed',
+];
+    public function isAdmin()
+{
+    return $this->role === 'admin';
+}
+
+public function isLivreur()
+{
+    return $this->role === 'livreur';
+}
+
+public function isClient()
+{
+    return $this->role === 'client';
+}
+
+public function evaluationsClients()
+{
+    return $this->hasMany(Evaluation::class, 'driver_id')->where('type_evaluation', 'client');
+}
 
    
  }

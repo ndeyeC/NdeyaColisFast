@@ -29,28 +29,50 @@ class ZonesTableSeeder extends Seeder
         ];
 
         // Créer toutes les combinaisons possibles entre toutes les régions
+        // foreach ($regions as $regionDepart) {
+        //     foreach ($regions as $regionArrivee) {
+        //         // Ne pas créer de doublons si la région de départ est la même que la région d'arrivée
+        //         if ($regionDepart !== $regionArrivee) {
+        //             foreach ($zoneMappings as $typeZone => $zones) {
+        //                 // Si les deux régions font partie du même groupe de zones
+        //                 if (in_array($regionDepart, $zones) && in_array($regionArrivee, $zones)) {
+        //                     // Vérifier si cette combinaison existe déjà dans la base de données
+        //                     if (!Zone::where('region_depart', $regionDepart)
+        //                         ->where('region_arrivee', $regionArrivee)
+        //                         ->exists()) {
+        //                         // Créer la nouvelle zone
+        //                         Zone::create([
+        //                             'region_depart' => $regionDepart,
+        //                             'region_arrivee' => $regionArrivee,
+        //                             'type_zone' => $typeZone
+        //                         ]);
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
         foreach ($regions as $regionDepart) {
-            foreach ($regions as $regionArrivee) {
-                // Ne pas créer de doublons si la région de départ est la même que la région d'arrivée
-                if ($regionDepart !== $regionArrivee) {
-                    foreach ($zoneMappings as $typeZone => $zones) {
-                        // Si les deux régions font partie du même groupe de zones
-                        if (in_array($regionDepart, $zones) && in_array($regionArrivee, $zones)) {
-                            // Vérifier si cette combinaison existe déjà dans la base de données
-                            if (!Zone::where('region_depart', $regionDepart)
-                                ->where('region_arrivee', $regionArrivee)
-                                ->exists()) {
-                                // Créer la nouvelle zone
-                                Zone::create([
-                                    'region_depart' => $regionDepart,
-                                    'region_arrivee' => $regionArrivee,
-                                    'type_zone' => $typeZone
-                                ]);
-                            }
-                        }
-                    }
+    foreach ($regions as $regionArrivee) {
+        foreach ($zoneMappings as $typeZone => $zones) {
+            // Si les deux régions font partie du même groupe de zones
+            if (in_array($regionDepart, $zones) && in_array($regionArrivee, $zones)) {
+                // Vérifier si cette combinaison existe déjà dans la base de données
+                if (!Zone::where('region_depart', $regionDepart)
+                    ->where('region_arrivee', $regionArrivee)
+                    ->exists()) {
+                    // Créer la nouvelle zone (même si départ == arrivée)
+                    Zone::create([
+                        'region_depart' => $regionDepart,
+                        'region_arrivee' => $regionArrivee,
+                        'type_zone' => $typeZone
+                    ]);
                 }
             }
         }
+    }
+}
+
     }
 }

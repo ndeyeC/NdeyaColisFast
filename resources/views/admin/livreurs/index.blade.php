@@ -13,6 +13,7 @@
                         <th>Email</th>
                         <th>Téléphone</th>
                         <th>Type de véhicule</th>
+                        <th>Type de livreur</th> <!-- Nouvelle colonne -->
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -23,20 +24,19 @@
                         <td>{{ $livreur->email }}</td>
                         <td>{{ $livreur->numero_telephone }}</td>
                         <td>{{ $livreur->vehicule ?? 'Non spécifié' }}</td>
+                        <td>{{ $livreur->type_livreur ?? 'Non spécifié' }}</td> <!-- Valeur ajoutée -->
                         <td>
-                        <a href="{{ route('admin.livreurs.show', $livreur->user_id) }}" class="btn btn-sm btn-info">
-    <i class="fas fa-eye"></i> Détails
-</a>
-<form action="{{ route('admin.livreurs.destroy', $livreur->user_id) }}" method="POST" style="display:inline-block;">
-    @csrf
-    @method('DELETE')
-    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce livreur ?');">
-        <i class="fas fa-trash"></i> Supprimer
-    </button>
-</form>
-
-</td>
-
+                            <a href="{{ route('admin.livreurs.show', $livreur->user_id) }}" class="btn btn-sm btn-info">
+                                <i class="fas fa-eye"></i> Détails
+                            </a>
+                            <form action="{{ route('admin.livreurs.destroy', $livreur->user_id) }}" method="POST" style="display:inline-block;">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce livreur ?');">
+                                    <i class="fas fa-trash"></i> Supprimer
+                                </button>
+                            </form>
+                        </td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -44,7 +44,6 @@
         </div>
 
         <div class="d-flex justify-content-center mt-4">
-            <!-- Pagination dynamique si applicable -->
             {{ $livreurs->links() }}
         </div>
     </div>

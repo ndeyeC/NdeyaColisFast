@@ -4,6 +4,45 @@
 
 @section('page-title', 'Livraisons en cours')
 
+
+@section('styles')
+    <style>
+        /* #leafletMap { height: 400px; width: 100%; }
+        .start-marker, .end-marker, .current-position { text-align: center; }
+        .leaflet-popup-content-wrapper { max-width: 200px; }
+        #routeInstructions { max-height: 150px; overflow-y: auto; } */
+
+        #leafletMap {
+            height: 300px; /* Réduire la hauteur de la carte pour laisser de l'espace */
+            width: 100%;
+            min-height: 200px; /* Hauteur minimale pour petits écrans */
+        }
+        .start-marker, .end-marker, .current-position {
+            text-align: center;
+        }
+        .leaflet-popup-content-wrapper {
+            max-width: 200px;
+        }
+        #routeInstructions {
+            max-height: 120px; /* Réduire légèrement pour plus de place */
+            overflow-y: auto;
+        }
+        /* Ajouter un défilement au contenu du modal si nécessaire */
+        .modal-content-container {
+            max-height: 80vh; /* Limiter la hauteur à 80% de l'écran */
+            overflow-y: auto; /* Activer le défilement vertical */
+            padding: 1rem;
+        }
+        .modal-footer {
+            position: sticky;
+            bottom: 0;
+            background: white; /* Fond blanc pour éviter la transparence */
+            padding: 1rem;
+            border-top: 1px solid #e5e7eb; /* Séparation visuelle */
+        }
+    </style>
+@endsection
+
 @section('content')
 <!-- Current Delivery Section -->
 <div class="bg-white rounded-lg shadow-md mb-6">
@@ -111,9 +150,6 @@
                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg shadow-sm flex items-center justify-center">
                             <i class="fas fa-phone"></i>
                         </a>
-                        <button class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-3 rounded-lg shadow-sm flex items-center justify-center">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
                     </div>
                 </div>
                 
@@ -292,13 +328,10 @@
                 <form id="deliveredForm" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Code de confirmation (si applicable)</label>
-                            <input type="text" name="code_confirmation" class="w-full rounded-lg border-gray-300">
-                        </div>
+                        
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Commentaire</label>
-                            <textarea name="commentaire" rows="3" class="w-full rounded-lg border-gray-300"></textarea>
+                            <textarea name="commentaire_livraison" rows="3" class="w-full rounded-lg border-gray-300"></textarea>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Photo de livraison</label>
@@ -319,46 +352,6 @@
     </div>
 </div>
 
-<!-- Problem Modal -->
-<!-- <div id="problemModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div class="p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Signaler un problème</h3>
-                <form id="problemForm" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Type de problème</label>
-                            <select name="type_probleme" class="w-full rounded-lg border-gray-300">
-                                <option value="client_absent">Client absent</option>
-                                <option value="adresse_incorrecte">Adresse incorrecte</option>
-                                <option value="colis_endommage">Colis endommagé</option>
-                                <option value="autre">Autre problème</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                            <textarea name="description" rows="3" required class="w-full rounded-lg border-gray-300"></textarea>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Photo (optionnelle)</label>
-                            <input type="file" name="photo" accept="image/*" class="w-full rounded-lg border-gray-300">
-                        </div>
-                    </div>
-                    <div class="mt-6 flex justify-end space-x-3">
-                        <button type="button" onclick="closeModal('problemModal')" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg">
-                            Annuler
-                        </button>
-                        <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg">
-                            Signaler
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div> -->
 
 <!-- Problem Modal -->
 <div id="problemModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
@@ -447,46 +440,50 @@
 </div>
 
 <!-- Navigation Options Modal -->
+<!-- Navigation Options Modal -->
 <div id="navigationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-  <div class="flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
-      <div class="p-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Ouvrir la navigation</h3>
-        <div id="leafletMap" style="height: 400px; width: 100%;"></div>
-        <div class="mt-6 flex justify-end">
-          <button onclick="closeModal('navigationModal')" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg">
-            Fermer
-          </button>
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+            <div class="modal-content-container">
+                <div class="p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Navigation</h3>
+                    <div id="leafletMap" style="height: 300px; width: 100%;"></div>
+                    <div class="mt-4">
+                        <h4 class="text-sm font-medium text-gray-700">Instructions de l'itinéraire</h4>
+                        <div id="routeInstructions" class="text-sm text-gray-600 max-h-120 overflow-y-auto"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="closeModal('navigationModal')" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg">
+                        Fermer
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
 </div>
-
 @endsection
 
 @section('scripts')
-section('scripts')
-@section('scripts')
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
 <script>
+// Global variables
 // Global variables
 let currentDeliveryId = {{ $livraisonActuelle ? $livraisonActuelle->id : 'null' }};
 let positionUpdateInterval;
+let navigationMap; // Variable globale pour la carte
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, currentDeliveryId:', currentDeliveryId);
     if (currentDeliveryId) {
-        initMap();
         startPositionUpdates();
     }
     setupFormSubmissions();
 });
-
-// Initialize map
-function initMap() {
-    console.log('Initializing map for delivery', currentDeliveryId);
-    // Intégration réelle via Google Maps / Leaflet ici
-}
 
 // Start periodic position updates
 function startPositionUpdates() {
@@ -527,42 +524,254 @@ function updateDeliveryPosition() {
 
 // Update delivery stats in UI
 function updateDeliveryStats(data) {
-    if (data.distance_restante !== undefined)
-        document.getElementById('remainingDistance').textContent = data.distance_restante + ' km';
+    if (data.distance_restante !== undefined) {
+        const remainingElement = document.getElementById('remainingDistance');
+        if (remainingElement) remainingElement.textContent = data.distance_restante + ' km';
+    }
 
-    if (data.temps_estime !== undefined)
-        document.getElementById('estimatedTime').textContent = data.temps_estime + ' min';
+    if (data.temps_estime !== undefined) {
+        const timeElement = document.getElementById('estimatedTime');
+        if (timeElement) timeElement.textContent = data.temps_estime + ' min';
+    }
 
     if (data.progress_percentage !== undefined) {
-        document.getElementById('deliveryProgressPercentage').textContent = data.progress_percentage + '%';
-        document.getElementById('deliveryProgressBar').style.width = data.progress_percentage + '%';
+        const percentageElement = document.getElementById('deliveryProgressPercentage');
+        const progressBarElement = document.getElementById('deliveryProgressBar');
+        
+        if (percentageElement) percentageElement.textContent = data.progress_percentage + '%';
+        if (progressBarElement) progressBarElement.style.width = data.progress_percentage + '%';
     }
 }
 
-// Update map
+// Update map position
 function updateMapPosition(lat, lng) {
     console.log('Map position updated to:', lat, lng);
-    // Code réel de mise à jour carte ici
+    if (navigationMap) {
+        // Mettre à jour la position sur la carte existante
+        navigationMap.setView([lat, lng], navigationMap.getZoom());
+    }
 }
 
-// Open navigation modal
+// ✅ FONCTION OPENNAVIGATION CORRIGÉE
 function openNavigation(deliveryId) {
+    console.log('Opening navigation for delivery:', deliveryId);
+
     fetch(`/livreur/livraisons/${deliveryId}/navigation`)
-        .then(res => res.json())
+        .then(res => {
+            console.log('Response status:', res.status);
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            return res.json();
+        })
         .then(data => {
-            if (data.success) {
-                document.getElementById('googleMapsLink').href = data.navigation_urls.google_maps;
-                document.getElementById('wazeLink').href = data.navigation_urls.waze;
-                document.getElementById('appleMapsLink').href = data.navigation_urls.apple_maps;
-                openModal('navigationModal');
-            } else {
-                alert(data.message || 'Erreur navigation');
+            console.log('Navigation data received:', data);
+
+            if (!data.success) {
+                alert(data.message || 'Erreur lors de la récupération des données de navigation.');
+                return;
             }
+
+            const routeData = data.route_data;
+            console.log('Route data:', routeData);
+
+            // Vérifier si les points de départ et d'arrivée sont identiques
+            if (routeData.start_point.lat === routeData.end_point.lat &&
+                routeData.start_point.lng === routeData.end_point.lng) {
+                alert("Les adresses de départ et d'arrivée sont identiques. Veuillez vérifier les adresses.");
+                return;
+            }
+
+            // Ouvrir le modal
+            openModal('navigationModal');
+
+            // Initialiser la carte après un délai
+            setTimeout(() => {
+                initializeNavigationMap(routeData);
+            }, 100);
         })
         .catch(err => {
-            console.error('Erreur navigation:', err);
-            alert('Erreur de navigation');
+            console.error('Navigation error:', err);
+            alert('Erreur de navigation: ' + err.message);
         });
+}
+
+// ✅ FONCTION SÉPARÉE POUR INITIALISER LA CARTE
+function initializeNavigationMap(routeData) {
+    const mapContainer = document.getElementById('leafletMap');
+    
+    if (!mapContainer) {
+        console.error('Container leafletMap not found!');
+        return;
+    }
+
+    // ✅ DÉTRUIRE LA CARTE EXISTANTE SI ELLE EXISTE
+    if (navigationMap) {
+        navigationMap.remove();
+        navigationMap = null;
+    }
+
+    // ✅ VÉRIFIER QUE LES DONNÉES SONT VALIDES
+    if (!routeData || !routeData.current_position || !routeData.start_point || !routeData.end_point) {
+        console.error('Invalid route data:', routeData);
+        alert('Données d\'itinéraire invalides');
+        return;
+    }
+
+    console.log('Initializing map with data:', {
+        current: routeData.current_position,
+        start: routeData.start_point,
+        end: routeData.end_point
+    });
+
+    try {
+        // ✅ INITIALISER LA CARTE AVEC LA POSITION ACTUELLE
+        navigationMap = L.map('leafletMap').setView([
+            routeData.current_position.lat, 
+            routeData.current_position.lng
+        ], 13);
+
+        // ✅ AJOUTER LA COUCHE DE TUILES
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(navigationMap);
+
+        console.log('Base map initialized successfully');
+
+        // ✅ AJOUTER LES MARQUEURS
+        const startMarker = L.marker([routeData.start_point.lat, routeData.start_point.lng], {
+            title: 'Point de départ'
+        }).addTo(navigationMap);
+        
+        const endMarker = L.marker([routeData.end_point.lat, routeData.end_point.lng], {
+            title: 'Point d\'arrivée'
+        }).addTo(navigationMap);
+        
+        const currentMarker = L.marker([routeData.current_position.lat, routeData.current_position.lng], {
+            title: 'Position actuelle'
+        }).addTo(navigationMap);
+
+        // ✅ AJOUTER LES POPUPS
+        startMarker.bindPopup('🚀 Point de départ<br>' + (routeData.start_address || 'Adresse de départ'));
+        endMarker.bindPopup('🎯 Point d\'arrivée<br>' + (routeData.end_address || 'Adresse d\'arrivée'));
+        currentMarker.bindPopup('📍 Votre position actuelle');
+
+        console.log('Markers added successfully');
+
+        // ✅ GÉRER LA POLYLINE (ITINÉRAIRE)
+        let polylineAdded = false;
+        
+        if (routeData.polyline && routeData.polyline.type === 'LineString' && routeData.polyline.coordinates) {
+            try {
+                // Convertir les coordonnées GeoJSON [lng, lat] en Leaflet [lat, lng]
+                const coordinates = routeData.polyline.coordinates.map(coord => [coord[1], coord[0]]);
+                
+                const polyline = L.polyline(coordinates, {
+                    color: '#007bff',
+                    weight: 5,
+                    opacity: 0.8
+                }).addTo(navigationMap);
+                
+                // Ajuster la vue pour inclure tout l'itinéraire
+                navigationMap.fitBounds(polyline.getBounds(), { padding: [20, 20] });
+                polylineAdded = true;
+                
+                console.log('Polyline added successfully with', coordinates.length, 'points');
+            } catch (polylineError) {
+                console.error('Error adding polyline:', polylineError);
+            }
+        }
+
+        // ✅ SOLUTION DE SECOURS SI PAS D'ITINÉRAIRE DÉTAILLÉ
+        if (!polylineAdded) {
+            console.warn('No valid polyline data, using fallback');
+            
+            const fallbackPolyline = L.polyline([
+                [routeData.start_point.lat, routeData.start_point.lng],
+                [routeData.current_position.lat, routeData.current_position.lng],
+                [routeData.end_point.lat, routeData.end_point.lng]
+            ], {
+                color: '#6c757d',
+                weight: 3,
+                dashArray: '5, 10',
+                opacity: 0.7
+            }).addTo(navigationMap);
+            
+            navigationMap.fitBounds(fallbackPolyline.getBounds(), { padding: [20, 20] });
+        }
+
+        // ✅ AFFICHER LES INSTRUCTIONS
+        displayRouteInstructions(routeData);
+
+        console.log('Map initialization completed successfully');
+
+    } catch (error) {
+        console.error('Error initializing map:', error);
+        alert('Erreur lors de l\'initialisation de la carte: ' + error.message);
+    }
+}
+
+// ✅ FONCTION POUR AFFICHER LES INSTRUCTIONS
+function displayRouteInstructions(routeData) {
+    const instructionsDiv = document.getElementById('routeInstructions');
+    if (!instructionsDiv) {
+        console.warn('Instructions container not found');
+        return;
+    }
+
+    let instructionsHTML = '';
+
+    if (routeData.steps && Array.isArray(routeData.steps) && routeData.steps.length > 0) {
+        instructionsHTML = routeData.steps.map((step, index) => {
+            const distance = step.distance ? `${Math.round(step.distance)}m` : '';
+            const duration = step.duration ? `${Math.round(step.duration / 60)}min` : '';
+            const details = [distance, duration].filter(Boolean).join(', ');
+            
+            return `
+                <div class="flex items-start space-x-3 mb-3 p-2 bg-gray-50 rounded">
+                    <div class="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        ${index + 1}
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm text-gray-800">${step.instruction || 'Instruction non disponible'}</p>
+                        ${details ? `<p class="text-xs text-gray-500 mt-1">${details}</p>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } else {
+        // Instructions par défaut basées sur les données disponibles
+        instructionsHTML = `
+            <div class="text-center p-4">
+                <p class="text-sm text-gray-600 mb-2">📍 Instructions de base :</p>
+                <div class="space-y-2 text-sm">
+                    <p>🚀 Départ : ${routeData.start_address || 'Point de départ'}</p>
+                    <p>🎯 Arrivée : ${routeData.end_address || 'Point d\'arrivée'}</p>
+                    ${routeData.distance_km ? `<p>📏 Distance : ${routeData.distance_km} km</p>` : ''}
+                    ${routeData.duration_minutes ? `<p>⏱️ Durée estimée : ${routeData.duration_minutes} min</p>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    instructionsDiv.innerHTML = instructionsHTML;
+    console.log('Instructions displayed');
+}
+
+// ✅ AMÉLIORER LA FONCTION DE FERMETURE DES MODAUX
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.classList.add('hidden');
+        
+        // ✅ NETTOYER LA CARTE QUAND ON FERME LE MODAL DE NAVIGATION
+        if (id === 'navigationModal' && navigationMap) {
+            setTimeout(() => {
+                navigationMap.remove();
+                navigationMap = null;
+                console.log('Navigation map cleaned up');
+            }, 300); // Délai pour l'animation de fermeture
+        }
+    }
 }
 
 // Start delivery
@@ -632,18 +841,16 @@ function showProblemModal(deliveryId) {
     openModal('problemModal');
 }
 
-// Cancel delivery - VERSION OPTIMALE AVEC ROUTE NOMMÉE
+// Cancel delivery
 function cancelDelivery(deliveryId) {
     console.log('Tentative d\'annulation pour la livraison:', deliveryId);
     
     if (confirm('Êtes-vous sûr de vouloir annuler cette livraison ?')) {
         const form = document.getElementById('cancelForm');
         
-        // ✅ SOLUTION OPTIMALE: Utiliser la route nommée Laravel
         if (typeof cancelRouteUrl !== 'undefined') {
             form.action = cancelRouteUrl.replace(':commandeId', deliveryId);
         } else {
-            // Fallback avec URL directe
             form.action = `/livreur/livraisons/${deliveryId}/annuler`;
         }
         
@@ -660,14 +867,13 @@ function cancelDelivery(deliveryId) {
     }
 }
 
-// ✅ FONCTION SUBMITFORM UNIFIÉE - PLUS DE DUPLICATION
+// Submit form function
 function submitForm(form) {
     const formData = new FormData(form);
     const submitBtn = form.querySelector('button[type="submit"]');
     const submitText = submitBtn.querySelector('.submit-text') || submitBtn;
     const originalText = submitText.textContent;
     
-    // Identifier le conteneur d'erreurs selon le formulaire
     const errorContainerMap = {
         'cancelForm': 'cancelFormErrors',
         'problemForm': 'problemFormErrors', 
@@ -675,7 +881,6 @@ function submitForm(form) {
     };
     const errorContainer = document.getElementById(errorContainerMap[form.id]);
     
-    // UI Loading state
     submitBtn.disabled = true;
     submitText.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Envoi...';
     
@@ -710,15 +915,13 @@ function submitForm(form) {
         }
         
         if (!response.ok) {
-            // Gestion spéciale pour les problèmes déjà signalés
             if (data.current_status === 'probleme_signale' && form.id === 'problemForm') {
                 if (confirm('Un signalement existe déjà. Voulez-vous le mettre à jour ?')) {
-                    return submitForm(form); // Nouvelle tentative
+                    return submitForm(form);
                 }
                 return;
             }
             
-            // Gestion des erreurs HTTP
             if (response.status === 404) {
                 throw new Error('Route non trouvée');
             } else if (response.status === 403) {
@@ -741,7 +944,6 @@ function submitForm(form) {
             showAlert('success', data.message || 'Opération réussie');
             
             setTimeout(() => {
-                // Fermer le modal correspondant
                 const modalMap = {
                     'cancelForm': 'cancelModal',
                     'problemForm': 'problemModal',
@@ -773,14 +975,14 @@ function submitForm(form) {
 
 // Modal helpers
 function openModal(id) {
-    document.getElementById(id).classList.remove('hidden');
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.classList.remove('hidden');
+        console.log('Modal opened:', id);
+    }
 }
 
-function closeModal(id) {
-    document.getElementById(id).classList.add('hidden');
-}
-
-// ✅ CONFIGURATION DES FORMULAIRES UNIFIÉE - PLUS DE DUPLICATION
+// Setup form submissions
 function setupFormSubmissions() {
     const formsConfig = {
         'deliveredForm': { needsGeolocation: true },
@@ -796,10 +998,8 @@ function setupFormSubmissions() {
             e.preventDefault();
             
             if (config.needsGeolocation && navigator.geolocation) {
-                // Ajouter géolocalisation avant soumission
                 navigator.geolocation.getCurrentPosition(
                     position => {
-                        // Ajouter ou mettre à jour les coordonnées
                         updateOrCreateHiddenInput(form, 'latitude', position.coords.latitude);
                         updateOrCreateHiddenInput(form, 'longitude', position.coords.longitude);
                         
@@ -812,14 +1012,13 @@ function setupFormSubmissions() {
                     { enableHighAccuracy: true, timeout: 10000 }
                 );
             } else {
-                // Soumission directe
                 submitForm(form);
             }
         });
     });
 }
 
-// Helper: Créer ou mettre à jour un input caché
+// Helper: Create or update hidden input
 function updateOrCreateHiddenInput(form, name, value) {
     let input = form.querySelector(`input[name="${name}"]`);
     if (!input) {
@@ -831,7 +1030,7 @@ function updateOrCreateHiddenInput(form, name, value) {
     input.value = value;
 }
 
-// Afficher les alertes
+// Show alerts
 function showAlert(type, message) {
     const alertDiv = document.createElement('div');
     alertDiv.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${

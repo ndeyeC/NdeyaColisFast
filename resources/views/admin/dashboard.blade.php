@@ -10,6 +10,21 @@
     'totalLivraisons' => $totalLivraisons,
     'revenusTotaux' => $revenusTotaux,
 ])
+{{-- ✅ Actions rapides --}}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">🚀 Actions rapides</h5>
+                <div>
+                    <a href="{{ route('admin.trajets.urbains') }}" class="btn btn-primary">
+                        🚗 Voir les trajets urbains & assigner des livraisons
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 

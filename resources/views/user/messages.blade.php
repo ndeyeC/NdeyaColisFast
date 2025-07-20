@@ -1,61 +1,99 @@
 @extends('layouts.index')
 
 @section('content')
-<div class="container">
-    <h3>Messagerie avec l'administration</h3>
-
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-
-    <!-- Formulaire pour envoyer un message -->
-    <div class="card mb-3">
-        <div class="card-header">Envoyer un message</div>
-        <div class="card-body">
-            <form id="messageForm">
-                @csrf
-                <input type="hidden" name="receiver_id" value="{{ getAdminId() }}">
-                <input type="hidden" name="receiver_type" value="App\Models\User">
-
-                <div class="mb-3">
-                    <textarea name="message" id="message" class="form-control" rows="4" placeholder="Votre message..." required></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary">Envoyer</button>
-            </form>
-            <div id="messageError" class="text-danger mt-2" style="display: none;"></div>
-        </div>
+<div class="container py-4">
+    <!-- ✅ Titre -->
+    <div class="text-center mb-4">
+        
+        <h2 class="fw-bold text-danger">
+            💬 Messagerie avec l'administration
+        </h2>
+        <p class="text-muted">Discutez directement avec notre équipe support</p>
     </div>
 
-    <!-- Affichage des messages -->
-    <div class="card">
-        <div class="card-header">Vos messages</div>
-        <div class="card-body" style="max-height: 400px; overflow-y: auto;" id="messagesContainer">
-            @if(count($communications) > 0)
-                @foreach($communications as $comm)
-                    <div class="mb-3 {{ $comm->sender_id === auth()->id() ? 'text-end' : 'text-start' }}" data-message-id="{{ $comm->id }}">
-                        <div class="p-2 rounded {{ $comm->sender_id === auth()->id() ? 'bg-primary text-white' : 'bg-light' }}">
-                            <strong>{{ $comm->sender_id === auth()->id() ? 'Vous' : 'Admin' }}</strong><br>
-                            {{ $comm->message }}<br>
-                            <small>{{ $comm->created_at->format('d/m/Y H:i') }}</small>
-                        </div>
-                    </div>
-                @endforeach
-            @else
-                <div class="text-center p-3" id="noMessagesPlaceholder">
-                    <p>Aucun message pour le moment. Commencez la conversation!</p>
+    <!-- ✅ Message de succès -->
+    @if(session('success'))
+        <div class="alert alert-success shadow-sm">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+
+            <!-- ✅ Zone des messages -->
+            <div class="card shadow-sm rounded-4 mb-3">
+                <div class="card-header bg-danger text-white">
+                    <i class="fas fa-comments"></i> Conversation
                 </div>
-            @endif
+                <div class="card-body p-3" 
+                     style="max-height: 400px; overflow-y: auto; background: #f9fafb;" 
+                     id="messagesContainer">
+                     
+                    @if(count($communications) > 0)
+                        @foreach($communications as $comm)
+                            <div class="d-flex {{ $comm->sender_id === auth()->id() ? 'justify-content-end' : 'justify-content-start' }} mb-3" data-message-id="{{ $comm->id }}">
+                                <div class="p-3 rounded-3 shadow-sm 
+                                    {{ $comm->sender_id === auth()->id() 
+                                        ? 'bg-danger text-white' 
+                                        : 'bg-light text-dark' }} 
+                                    " style="max-width: 70%">
+                                    
+                                    <strong class="d-block small mb-1">
+                                        {{ $comm->sender_id === auth()->id() ? 'Vous' : 'Admin' }}
+                                    </strong>
+                                    <div>{{ $comm->message }}</div>
+                                    <small class="d-block mt-1 text-light opacity-75">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ $comm->created_at->format('d/m/Y H:i') }}
+                                    </small>
+                                </div>
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="text-center py-4 text-muted" id="noMessagesPlaceholder">
+                            <i class="fas fa-envelope-open-text fa-2x mb-2 text-danger"></i>
+                            <p>Aucun message pour le moment.<br><b>Commencez la conversation !</b></p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- ✅ Formulaire d’envoi -->
+            <div class="card shadow-sm rounded-4">
+                <div class="card-body">
+                    <form id="messageForm" class="d-flex gap-2">
+                        @csrf
+                        <input type="hidden" name="receiver_id" value="{{ getAdminId() }}">
+                        <input type="hidden" name="receiver_type" value="App\Models\User">
+
+                        <textarea 
+                            name="message" 
+                            id="message" 
+                            class="form-control rounded-3 shadow-sm" 
+                            rows="2" 
+                            placeholder="Écrivez votre message..." 
+                            required></textarea>
+
+                        <button type="submit" class="btn btn-danger d-flex align-items-center justify-content-center px-4">
+                            <i class="fas fa-paper-plane me-1"></i> Envoyer
+                        </button>
+                    </form>
+                    <div id="messageError" class="text-danger mt-2" style="display: none;"></div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
 
+<!-- ✅ Script -->
 <script>
     const currentUserId = {{ auth()->id() }};
     const messagesContainer = document.getElementById("messagesContainer");
     const messageError = document.getElementById("messageError");
     const noMessagesPlaceholder = document.getElementById("noMessagesPlaceholder");
 
-    // Faire défiler jusqu'au dernier message au chargement
     window.onload = function() {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     };
@@ -65,8 +103,7 @@
 
         const formData = new FormData(this);
 
-        // Utiliser la route corrigée
-         fetch("{{ route('user.messages.send') }}", {
+        fetch("{{ route('user.messages.send') }}", {
             method: "POST",
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -76,37 +113,31 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Supprimer le placeholder s'il existe
-                if (noMessagesPlaceholder) {
-                    noMessagesPlaceholder.remove();
-                }
+                if (noMessagesPlaceholder) noMessagesPlaceholder.remove();
                 
-                // Réinitialiser le champ message
                 const messageText = document.getElementById('message').value;
                 document.getElementById('message').value = '';
                 
-                // Ajouter le message directement
                 const now = new Date();
                 const formattedDate = now.toLocaleDateString('fr-FR') + ' ' + 
                                      String(now.getHours()).padStart(2, '0') + ':' + 
                                      String(now.getMinutes()).padStart(2, '0');
                 
                 const div = document.createElement("div");
-                div.classList.add("mb-3", "text-end");
-                // Ajouter un ID temporaire pour éviter les doublons
+                div.classList.add("d-flex", "justify-content-end", "mb-3");
                 div.setAttribute('data-message-id', 'temp-' + Date.now());
                 div.innerHTML = `
-                    <div class="p-2 rounded bg-primary text-white">
-                        <strong>Vous</strong><br>
-                        ${messageText}<br>
-                        <small>${formattedDate}</small>
+                    <div class="p-3 rounded-3 shadow-sm bg-danger text-white" style="max-width: 70%">
+                        <strong class="d-block small mb-1">Vous</strong>
+                        ${messageText}
+                        <small class="d-block mt-1 text-light opacity-75">
+                            <i class="fas fa-clock me-1"></i>${formattedDate}
+                        </small>
                     </div>
                 `;
 
                 messagesContainer.appendChild(div);
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                
-                // Masquer message d'erreur s'il était affiché
                 messageError.style.display = 'none';
             } else {
                 messageError.style.display = 'block';
@@ -121,7 +152,6 @@
     });
 
     function loadNewMessages() {
-        // Trouver le dernier message avec un vrai ID (pas temporaire)
         const messageElements = document.querySelectorAll("#messagesContainer [data-message-id]");
         let lastMessageId = 0;
         
@@ -129,13 +159,11 @@
             const messageId = element.getAttribute("data-message-id");
             if (messageId && !messageId.startsWith('temp-')) {
                 const id = parseInt(messageId);
-                if (id > lastMessageId) {
-                    lastMessageId = id;
-                }
+                if (id > lastMessageId) lastMessageId = id;
             }
         });
         
-      fetch("{{ route('user.messages.check') }}", {
+        fetch("{{ route('user.messages.check') }}", {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json',
@@ -148,22 +176,16 @@
             const newMessages = data.communications;
             
             if (newMessages && newMessages.length > 0) {
-                // Supprimer le placeholder s'il existe
-                if (noMessagesPlaceholder) {
-                    noMessagesPlaceholder.remove();
-                }
+                if (noMessagesPlaceholder) noMessagesPlaceholder.remove();
                 
                 newMessages.forEach(message => {
-                    // Vérifier si le message n'est pas déjà affiché
                     if (!document.querySelector(`[data-message-id="${message.id}"]`)) {
-                        // Supprimer les messages temporaires du même utilisateur si c'est son propre message
                         if (message.sender_id === currentUserId) {
-                            const tempMessages = document.querySelectorAll('[data-message-id^="temp-"]');
-                            tempMessages.forEach(temp => temp.remove());
+                            document.querySelectorAll('[data-message-id^="temp-"]').forEach(temp => temp.remove());
                         }
                         
                         const div = document.createElement("div");
-                        div.classList.add("mb-3", message.sender_id === currentUserId ? 'text-end' : 'text-start');
+                        div.classList.add("d-flex", message.sender_id === currentUserId ? 'justify-content-end' : 'justify-content-start', "mb-3");
                         div.setAttribute('data-message-id', message.id);
 
                         const messageDate = new Date(message.created_at);
@@ -172,10 +194,12 @@
                                            String(messageDate.getMinutes()).padStart(2, '0');
 
                         div.innerHTML = `
-                            <div class="p-2 rounded ${message.sender_id === currentUserId ? 'bg-primary text-white' : 'bg-light'}">
-                                <strong>${message.sender_id === currentUserId ? 'Vous' : 'Admin'}</strong><br>
-                                ${message.message}<br>
-                                <small>${formattedDate}</small>
+                            <div class="p-3 rounded-3 shadow-sm ${message.sender_id === currentUserId ? 'bg-danger text-white' : 'bg-light'}" style="max-width: 70%">
+                                <strong class="d-block small mb-1">${message.sender_id === currentUserId ? 'Vous' : 'Admin'}</strong>
+                                ${message.message}
+                                <small class="d-block mt-1 text-muted">
+                                    <i class="fas fa-clock me-1"></i>${formattedDate}
+                                </small>
                             </div>
                         `;
 
@@ -190,10 +214,7 @@
         });
     }
 
-    // Vérifier les nouveaux messages toutes les 3 secondes
     setInterval(loadNewMessages, 3000);
-    
-    // Charger les nouveaux messages une première fois après 1 seconde
     setTimeout(loadNewMessages, 1000);
 </script>
 @endsection

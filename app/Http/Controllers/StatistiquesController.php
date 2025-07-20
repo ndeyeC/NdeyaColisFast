@@ -71,33 +71,9 @@ class StatistiquesController extends Controller
             $evolutionLivraisons[] = $count;
         }
 
-        $repartitionQuartiers = Commnande::select('region_arrivee', DB::raw('count(*) as total'))
-            ->where('status', Commnande::STATUT_LIVREE)
-            ->whereMonth('updated_at', Carbon::now()->month)
-            ->groupBy('region_arrivee')
-            ->orderByDesc('total')
-            ->limit(5)
-            ->get();
-
-        $quartiers = ['Plateau', 'Ouakam', 'Almadies', 'Mermoz', 'Autres'];
-        $donneesQuartiers = [0, 0, 0, 0, 0];
-        
-        foreach ($repartitionQuartiers as $repartition) {
-            $quartier = $repartition->region_arrivee;
-            $index = array_search($quartier, $quartiers);
-            
-            if ($index !== false && $index < 4) {
-                $donneesQuartiers[$index] = $repartition->total;
-            } else {
-                $donneesQuartiers[4] += $repartition->total;
-            }
-        }
-
         return [
             'evolution_livraisons' => $evolutionLivraisons,
-            'jours' => $jours,
-            'quartiers' => $quartiers,
-            'donnees_quartiers' => $donneesQuartiers
+            'jours' => $jours
         ];
     }
 

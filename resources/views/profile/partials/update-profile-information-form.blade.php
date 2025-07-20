@@ -46,6 +46,30 @@
                 </div>
             @endif
         </div>
+         <!-- ✅ Numéro de téléphone -->
+        <div>
+            <x-input-label for="numero_telephone" :value="__('Phone Number')" />
+            <x-text-input id="numero_telephone" name="numero_telephone" type="text" class="mt-1 block w-full"
+                :value="old('numero_telephone', $user->numero_telephone)" autocomplete="tel" />
+            <x-input-error class="mt-2" :messages="$errors->get('numero_telephone')" />
+        </div>
+
+        <!-- Boutons -->
+        <div class="flex items-center gap-4">
+            <x-primary-button>{{ __('Save') }}</x-primary-button>
+
+            @if (session('status') === 'profile-updated')
+                <p
+                    x-data="{ show: true }"
+                    x-show="show"
+                    x-transition
+                    x-init="setTimeout(() => show = false, 2000)"
+                    class="text-sm text-gray-600"
+                >{{ __('Saved.') }}</p>
+            @endif
+        </div>
+    </form>
+</section>
 
         <div class="flex items-center gap-4">
             <x-primary-button>{{ __('Save') }}</x-primary-button>

@@ -56,15 +56,6 @@
                     <x-input-error :messages="$errors->get('password')" class="mt-2" />
                 </div>
 
-                <!-- Rôle -->
-                <div class="mt-4">
-                    <x-input-label for="role" :value="__('Se connecter en tant que')" />
-                    <select id="role" name="role" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-red-400 focus:ring focus:ring-red-200 focus:ring-opacity-50">
-                        <option value="client">Client</option>
-                        <option value="livreur">Livreur</option>
-                        <option value="admin">Administrateur</option>
-                    </select>
-                </div>
 
                 <!-- Souvenir -->
                 <div class="block mt-4">
