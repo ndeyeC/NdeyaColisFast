@@ -17,9 +17,7 @@ class MessageController extends Controller
         }
         
         $communications = Communication::userConversations(Auth::id())->get();
-        
-        // Debug des messages (à supprimer en production)
-        // dd($communications);
+       
         
         return view('user.messages', [
             'communications' => $communications
@@ -65,8 +63,10 @@ class MessageController extends Controller
         
         $communications = Communication::newMessagesForUser(
             Auth::id(),
-            $validated['last_id']
-        );
+           'App\Models\User',
+          $validated['last_id']
+);
+
         
         foreach ($communications as $comm) {
             if ($comm->receiver_id === Auth::id() && !$comm->is_read) {

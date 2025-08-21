@@ -6,6 +6,7 @@
 <div class="bg-gray-50 min-h-screen pb-16">
     <div class="max-w-md mx-auto bg-white shadow-sm relative min-h-screen">
 
+
         <!-- === ONGLET ACCUEIL === -->
         <div id="homeTab" class="tab-content">
             
@@ -59,7 +60,7 @@
                     <h2 class="font-bold text-lg flex items-center">
                         <i class="fas fa-users text-red-600 mr-2"></i> Livreurs disponibles
                     </h2>
-                    <span class="text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full" id="livreursCount">
+                    <span class="text-sm bg-red-100 text-red-800 px-2 py-1 rounded-full" id="livreursCount">
                         {{ isset($livreursDisponibles) ? count($livreursDisponibles) : 0 }} en ligne
                     </span>
                 </div>
@@ -93,67 +94,176 @@
                         <div class="text-xs text-gray-500">Note moyenne</div>
                     </div>
                     <div class="bg-white border rounded-xl p-3 shadow-sm">
-                        <div class="text-xl font-bold text-green-600">{{ isset($statistiques['montant_total']) ? number_format($statistiques['montant_total']) : 0 }}</div>
+                        <div class="text-xl font-bold text-red-600">{{ isset($statistiques['montant_total']) ? number_format($statistiques['montant_total']) : 0 }}</div>
                         <div class="text-xs text-gray-500">FCFA dépensés</div>
                     </div>
                 </div>
             </div>
-        </div>
-        <!-- === Livraisons terminées à noter === -->
-<div class="p-4 border-t mt-4">
-    <h3 class="font-bold mb-3 flex items-center">
-        <i class="fas fa-star text-yellow-500 mr-2"></i> Livraisons terminées
-    </h3>
 
-    @if(isset($livraisonsTerminees) && count($livraisonsTerminees) > 0)
-        @foreach($livraisonsTerminees as $livraison)
-            <div class="bg-white shadow p-5 rounded-lg mb-4">
-                <h3 class="text-xl font-bold text-gray-800">Livraison #{{ $livraison->id }}</h3>
-                <p class="text-gray-600">Livreur : 
-                    <strong>{{ $livraison->livreur->name }}</strong>
-                </p>
+            <!-- Livraisons terminées à noter -->
+            <div class="p-4 border-t mt-4">
+                <h3 class="font-bold mb-3 flex items-center">
+                    <i class="fas fa-star text-yellow-500 mr-2"></i> Livraisons terminées
+                    @if(isset($livraisonsTerminees))
+                        <span class="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                            {{ count($livraisonsTerminees) }}
+                        </span>
+                    @endif
+                </h3>
 
-                @if(!$livraison->rating)
-                    <!-- Formulaire de notation -->
-                    <form action="{{ route('client.evaluations') }}" method="POST" class="mt-3">
-                        @csrf
-                        <input type="hidden" name="commande_id" value="{{ $livraison->id }}">
-                        <input type="hidden" name="driver_id" value="{{ $livraison->driver->id }}">
+                @if(isset($livraisonsTerminees) && count($livraisonsTerminees) > 0)
+                    @foreach($livraisonsTerminees as $livraison)
+                        <div class="bg-white shadow p-5 rounded-lg mb-4 border">
+                            <!-- En-tête de la livraison -->
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex-1">
+                                    <h4 class="text-lg font-bold text-gray-800 flex items-center">
+                                        <i class="fas fa-box mr-2 text-blue-500"></i>
+                                        Livraison #{{ $livraison->id }}
+                                    </h4>
+                                    <p class="text-gray-600 mt-1">
+                                        <i class="fas fa-route mr-1 text-red-500"></i>
+                                        {{ Str::limit($livraison->adresse_depart, 25) }} 
+                                        → {{ Str::limit($livraison->adresse_arrivee, 25) }}
+                                    </p>
+                                    @if($livraison->driver)
+                                        <p class="text-sm text-gray-600 mt-1">
+                                            <i class="fas fa-user mr-1 text-orange-500"></i>
+                                            Livreur : <strong>{{ $livraison->driver->name }}</strong>
+                                        </p>
+                                    @else
+                                        <p class="text-sm text-gray-600 mt-1">
+                                            <i class="fas fa-user mr-1 text-orange-500"></i>
+                                            Livreur : Non disponible
+                                        </p>
+                                    @endif
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        <i class="fas fa-calendar mr-1"></i>
+                                        Livré le {{ $livraison->updated_at->format('d/m/Y à H:i') }}
+                                    </p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-semibold">
+                                        {{ number_format($livraison->prix_final) }} FCFA
+                                    </span>
+                                    <div class="text-xs text-gray-500 mt-1">{{ $livraison->type_colis }}</div>
+                                </div>
+                            </div>
 
-                        <!-- Système d'étoiles -->
-                        <div class="flex items-center gap-2 mb-3">
-                            @for($i = 1; $i <= 5; $i++)
-                                <label class="cursor-pointer">
-                                    <input type="radio" name="rating" value="{{ $i }}" class="hidden peer" required>
-                                    <svg class="w-8 h-8 text-gray-300 peer-checked:text-yellow-400 hover:text-yellow-500 transition"
-                                         xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.785.57-1.84-.197-1.54-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"/>
-                                    </svg>
-                                </label>
-                            @endfor
+                            <!-- Vérifier l'évaluation -->
+                            @if($livraison->evaluation)
+                                <div class="bg-red-50 border border-green-200 rounded-lg p-4">
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-red-700 font-semibold flex items-center">
+                                            <i class="fas fa-check-circle mr-2"></i>
+                                            Évaluation envoyée
+                                        </p>
+                                        <span class="text-xs text-gray-500">
+                                            {{ $livraison->evaluation->created_at->format('d/m/Y') }}
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center mt-2">
+                                        <span class="text-sm text-gray-600 mr-2">Votre note :</span>
+                                        @for($i = 1; $i <= 5; $i++)
+                                            <svg class="w-5 h-5 {{ $i <= $livraison->evaluation->note ? 'text-yellow-400' : 'text-gray-300' }}"
+                                                 fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.785.57-1.84-.197-1.54-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"/>
+                                            </svg>
+                                        @endfor
+                                        <span class="ml-2 text-sm font-medium text-gray-700">
+                                            {{ $livraison->evaluation->note }}/5
+                                        </span>
+                                    </div>
+                                    @if($livraison->evaluation->commentaire)
+                                        <div class="mt-2 p-2 bg-white rounded border">
+                                            <p class="text-sm text-gray-600 italic">
+                                                "{{ $livraison->evaluation->commentaire }}"
+                                            </p>
+                                        </div>
+                                    @endif
+                                </div>
+                            @else
+                                @if($livraison->driver_id)
+                                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <p class="text-blue-800 font-medium mb-3 flex items-center">
+                                            <i class="fas fa-star text-yellow-500 mr-2"></i>
+                                            Comment s'est passée votre livraison ?
+                                        </p>
+                                        <form action="{{ route('client.evaluations') }}" method="POST" class="space-y-4">
+                                            @csrf
+                                            <input type="hidden" name="commande_id" value="{{ $livraison->id }}">
+
+                                            <div class="space-y-2">
+                                                <label class="block text-sm font-medium text-gray-700">
+                                                    Votre note *
+                                                </label>
+                                                <div class="flex items-center space-x-1" id="rating-{{ $livraison->id }}">
+                                                    @for($i = 1; $i <= 5; $i++)
+                                                        <label class="cursor-pointer group">
+                                                            <input type="radio" name="rating" value="{{ $i }}" 
+                                                                   class="hidden peer" required 
+                                                                   onchange="updateStars({{ $livraison->id }}, {{ $i }})">
+                                                            <svg class="w-8 h-8 text-gray-300 peer-checked:text-yellow-400 group-hover:text-yellow-500 transition-all duration-200 star-{{ $livraison->id }}"
+                                                                 fill="currentColor" viewBox="0 0 20 20">
+                                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3 .921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.785 .57-1.84-.197-1.54-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81 .588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"/>
+                                                            </svg>
+                                                        </label>
+                                                    @endfor
+                                                </div>
+                                            </div>
+
+                                            <div class="space-y-2">
+                                                <label class="block text-sm font-medium text-gray-700">
+                                                    Votre commentaire (optionnel)
+                                                </label>
+                                                <textarea name="commentaire" rows="3" 
+                                                          placeholder="Dites-nous comment s'est passée votre livraison..."
+                                                          class="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"></textarea>
+                                            </div>
+
+                                            <div class="flex justify-end">
+                                                <button type="submit" 
+                                                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center">
+                                                    <i class="fas fa-paper-plane mr-2"></i>
+                                                    Envoyer mon évaluation
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                @else
+                                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                                        <i class="fas fa-exclamation-triangle text-yellow-500 text-2xl mb-2"></i>
+                                        <p class="text-gray-600">
+                                            Impossible d'évaluer cette livraison
+                                        </p>
+                                        <p class="text-sm text-gray-500">
+                                            Aucun livreur n'a été assigné à cette commande
+                                        </p>
+                                    </div>
+                                @endif
+                            @endif
                         </div>
-
-                        <!-- Commentaire optionnel -->
-                        <textarea name="commentaire" rows="2" placeholder="Votre avis (facultatif)" class="w-full p-3 border rounded-lg"></textarea>
-
-                        <!-- Bouton envoyer -->
-                        <button type="submit" class="mt-3 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
-                             Noter le livreur
-                        </button>
-                    </form>
+                    @endforeach
                 @else
-                    <p class="mt-3 text-green-600 font-semibold"> Vous avez déjà noté cette livraison</p>
+                    <div class="bg-gray-50 border border-gray-200 p-8 rounded-xl text-center">
+                        <div class="mb-4">
+                            <i class="fas fa-box-open text-gray-400 text-4xl"></i>
+                        </div>
+                        <h4 class="text-lg font-semibold text-gray-600 mb-2">
+                            Aucune livraison terminée
+                        </h4>
+                        <p class="text-gray-500 mb-4">
+                            Vos livraisons terminées apparaîtront ici pour pouvoir les noter
+                        </p>
+                        <button onclick="window.location.href='{{ url('commnandes/create') }}'" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-plus mr-2"></i>
+                            Créer une livraison
+                        </button>
+                    </div>
                 @endif
             </div>
-        @endforeach
-    @else
-        <div class="bg-gray-50 border border-gray-200 p-5 rounded-xl text-center shadow-sm">
-            <i class="fas fa-box-open text-gray-400 text-3xl mb-2"></i>
-            <p class="text-gray-500">Aucune livraison terminée pour le moment</p>
         </div>
-    @endif
-</div>
-
 
         <!-- === ONGLET PROFIL === -->
         <div id="profileTab" class="tab-content hidden p-4">
@@ -188,9 +298,9 @@
             <!-- Menu profil -->
             <div class="space-y-3">
                 <a href="{{ route('profile.edit') }}" class="menu-item">
-    <i class="fas fa-edit bg-blue-100 text-blue-600"></i>
-    <span>Modifier mon profil</span>
-</a>
+                    <i class="fas fa-edit bg-blue-100 text-blue-600"></i>
+                    <span>Modifier mon profil</span>
+                </a>
 
                 <a href="{{ route('client.aide') }}" class="menu-item">
                     <i class="fas fa-question-circle bg-yellow-100 text-yellow-600"></i>
@@ -265,6 +375,7 @@
 </style>
 
 <script>
+    
     function showTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
         document.getElementById(tabId).classList.remove('hidden');
@@ -286,6 +397,19 @@
 
     function updateCommandeEnCours(commande) { /* reste identique */ }
     function updateLivreursDisponibles(livreurs) { /* reste identique */ }
+
+    function updateStars(commandeId, rating) {
+        const stars = document.querySelectorAll(`.star-${commandeId}`);
+        stars.forEach((star, index) => {
+            if (index < rating) {
+                star.classList.remove('text-gray-300');
+                star.classList.add('text-yellow-400');
+            } else {
+                star.classList.remove('text-yellow-400');
+                star.classList.add('text-gray-300');
+            }
+        });
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
         showTab('homeTab');

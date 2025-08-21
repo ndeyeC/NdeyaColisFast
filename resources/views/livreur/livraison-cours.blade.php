@@ -7,11 +7,7 @@
 
 @section('styles')
     <style>
-        /* #leafletMap { height: 400px; width: 100%; }
-        .start-marker, .end-marker, .current-position { text-align: center; }
-        .leaflet-popup-content-wrapper { max-width: 200px; }
-        #routeInstructions { max-height: 150px; overflow-y: auto; } */
-
+        
         #leafletMap {
             height: 300px; /* Réduire la hauteur de la carte pour laisser de l'espace */
             width: 100%;
@@ -109,7 +105,7 @@
                                 <span id="deliveryProgressPercentage">{{ $progressPercentage }}%</span>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div id="deliveryProgressBar" class="bg-green-500 h-2 rounded-full" 
+                                <div id="deliveryProgressBar" class="bg-red-500 h-2 rounded-full" 
                                      style="width: {{ $progressPercentage }}%"></div>
                             </div>
                         </div>
@@ -142,12 +138,12 @@
                     <!-- Action Buttons -->
                     <div class="flex space-x-2">
                         <button onclick="openNavigation({{ $livraisonActuelle->id }})" 
-                                class="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-lg shadow-sm flex items-center justify-center">
+                                class="flex-1 bg-red-500 hover:bg-red-500 text-white px-4 py-3 rounded-lg shadow-sm flex items-center justify-center">
                                <i class="fas fa-route mr-2"></i>
                             Ouvrir la navigation
                         </button>
                         <a href="tel:{{ $livraisonActuelle->user->phone ?? '' }}" 
-                           class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg shadow-sm flex items-center justify-center">
+                           class="bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-lg shadow-sm flex items-center justify-center">
                             <i class="fas fa-phone"></i>
                         </a>
                     </div>
@@ -155,12 +151,6 @@
                 
                 <!-- Map Column -->
                 <div class="w-full md:w-1/3">
-                    <div class="h-64 bg-gray-100 rounded-lg relative" id="deliveryMap">
-                        <!-- Map will be rendered here by JavaScript -->
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <p class="text-gray-500">Carte de l'itinéraire</p>
-                        </div>
-                    </div>
                     
                     <!-- Delivery Actions -->
                     <div class="bg-white rounded-lg shadow-sm mt-4 p-4 border border-gray-200">
@@ -190,7 +180,7 @@
                 <i class="fas fa-inbox text-4xl text-gray-400 mb-4"></i>
                 <p class="text-gray-500">Aucune livraison en cours actuellement</p>
                 <a href="{{ route('livreur.livraisons-disponible') }}" 
-                   class="mt-4 inline-block bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                   class="mt-4 inline-block bg-red-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
                     <i class="fas fa-search mr-2"></i> Voir les livraisons disponibles
                 </a>
             </div>
@@ -247,7 +237,7 @@
                         
                         <div class="flex space-x-2">
                             <button onclick="startDelivery({{ $livraison->id }})" 
-                                    class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow-sm flex items-center">
+                                    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-sm flex items-center">
                                 <i class="fas fa-play mr-2"></i>
                                 Démarrer
                             </button>
@@ -333,10 +323,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Commentaire</label>
                             <textarea name="commentaire_livraison" rows="3" class="w-full rounded-lg border-gray-300"></textarea>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Photo de livraison</label>
-                            <input type="file" name="photo_livraison" accept="image/*" class="w-full rounded-lg border-gray-300">
-                        </div>
+                       
                     </div>
                     <div class="mt-6 flex justify-end space-x-3">
                         <button type="button" onclick="closeModal('deliveredModal')" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg">
@@ -468,13 +455,17 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
+<!-- 
 <script>
-// Global variables
-// Global variables
-let currentDeliveryId = {{ $livraisonActuelle ? $livraisonActuelle->id : 'null' }};
-let positionUpdateInterval;
-let navigationMap; // Variable globale pour la carte
+        let currentDeliveryId = {{ $livraisonActuelle ? $livraisonActuelle->id : 'null' }};
+    </script>
+    
+    <script src="{{ asset('js/livraisoncours.js') }}"></script> -->
+
+    <script>
+       let currentDeliveryId = {{ $livraisonActuelle ? $livraisonActuelle->id : 'null' }};
+        let positionUpdateInterval;
+        let navigationMap;
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
@@ -547,12 +538,11 @@ function updateDeliveryStats(data) {
 function updateMapPosition(lat, lng) {
     console.log('Map position updated to:', lat, lng);
     if (navigationMap) {
-        // Mettre à jour la position sur la carte existante
         navigationMap.setView([lat, lng], navigationMap.getZoom());
     }
 }
 
-// ✅ FONCTION OPENNAVIGATION CORRIGÉE
+// Open navigation
 function openNavigation(deliveryId) {
     console.log('Opening navigation for delivery:', deliveryId);
 
@@ -573,17 +563,14 @@ function openNavigation(deliveryId) {
             const routeData = data.route_data;
             console.log('Route data:', routeData);
 
-            // Vérifier si les points de départ et d'arrivée sont identiques
             if (routeData.start_point.lat === routeData.end_point.lat &&
                 routeData.start_point.lng === routeData.end_point.lng) {
                 alert("Les adresses de départ et d'arrivée sont identiques. Veuillez vérifier les adresses.");
                 return;
             }
 
-            // Ouvrir le modal
             openModal('navigationModal');
 
-            // Initialiser la carte après un délai
             setTimeout(() => {
                 initializeNavigationMap(routeData);
             }, 100);
@@ -594,7 +581,7 @@ function openNavigation(deliveryId) {
         });
 }
 
-// ✅ FONCTION SÉPARÉE POUR INITIALISER LA CARTE
+// Initialize navigation map
 function initializeNavigationMap(routeData) {
     const mapContainer = document.getElementById('leafletMap');
     
@@ -603,13 +590,11 @@ function initializeNavigationMap(routeData) {
         return;
     }
 
-    // ✅ DÉTRUIRE LA CARTE EXISTANTE SI ELLE EXISTE
     if (navigationMap) {
         navigationMap.remove();
         navigationMap = null;
     }
 
-    // ✅ VÉRIFIER QUE LES DONNÉES SONT VALIDES
     if (!routeData || !routeData.current_position || !routeData.start_point || !routeData.end_point) {
         console.error('Invalid route data:', routeData);
         alert('Données d\'itinéraire invalides');
@@ -623,13 +608,11 @@ function initializeNavigationMap(routeData) {
     });
 
     try {
-        // ✅ INITIALISER LA CARTE AVEC LA POSITION ACTUELLE
         navigationMap = L.map('leafletMap').setView([
             routeData.current_position.lat, 
             routeData.current_position.lng
         ], 13);
 
-        // ✅ AJOUTER LA COUCHE DE TUILES
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -637,7 +620,6 @@ function initializeNavigationMap(routeData) {
 
         console.log('Base map initialized successfully');
 
-        // ✅ AJOUTER LES MARQUEURS
         const startMarker = L.marker([routeData.start_point.lat, routeData.start_point.lng], {
             title: 'Point de départ'
         }).addTo(navigationMap);
@@ -650,19 +632,16 @@ function initializeNavigationMap(routeData) {
             title: 'Position actuelle'
         }).addTo(navigationMap);
 
-        // ✅ AJOUTER LES POPUPS
         startMarker.bindPopup('🚀 Point de départ<br>' + (routeData.start_address || 'Adresse de départ'));
         endMarker.bindPopup('🎯 Point d\'arrivée<br>' + (routeData.end_address || 'Adresse d\'arrivée'));
         currentMarker.bindPopup('📍 Votre position actuelle');
 
         console.log('Markers added successfully');
 
-        // ✅ GÉRER LA POLYLINE (ITINÉRAIRE)
         let polylineAdded = false;
         
         if (routeData.polyline && routeData.polyline.type === 'LineString' && routeData.polyline.coordinates) {
             try {
-                // Convertir les coordonnées GeoJSON [lng, lat] en Leaflet [lat, lng]
                 const coordinates = routeData.polyline.coordinates.map(coord => [coord[1], coord[0]]);
                 
                 const polyline = L.polyline(coordinates, {
@@ -671,7 +650,6 @@ function initializeNavigationMap(routeData) {
                     opacity: 0.8
                 }).addTo(navigationMap);
                 
-                // Ajuster la vue pour inclure tout l'itinéraire
                 navigationMap.fitBounds(polyline.getBounds(), { padding: [20, 20] });
                 polylineAdded = true;
                 
@@ -681,7 +659,6 @@ function initializeNavigationMap(routeData) {
             }
         }
 
-        // ✅ SOLUTION DE SECOURS SI PAS D'ITINÉRAIRE DÉTAILLÉ
         if (!polylineAdded) {
             console.warn('No valid polyline data, using fallback');
             
@@ -699,7 +676,6 @@ function initializeNavigationMap(routeData) {
             navigationMap.fitBounds(fallbackPolyline.getBounds(), { padding: [20, 20] });
         }
 
-        // ✅ AFFICHER LES INSTRUCTIONS
         displayRouteInstructions(routeData);
 
         console.log('Map initialization completed successfully');
@@ -710,7 +686,7 @@ function initializeNavigationMap(routeData) {
     }
 }
 
-// ✅ FONCTION POUR AFFICHER LES INSTRUCTIONS
+// Display route instructions
 function displayRouteInstructions(routeData) {
     const instructionsDiv = document.getElementById('routeInstructions');
     if (!instructionsDiv) {
@@ -739,7 +715,6 @@ function displayRouteInstructions(routeData) {
             `;
         }).join('');
     } else {
-        // Instructions par défaut basées sur les données disponibles
         instructionsHTML = `
             <div class="text-center p-4">
                 <p class="text-sm text-gray-600 mb-2">📍 Instructions de base :</p>
@@ -757,19 +732,18 @@ function displayRouteInstructions(routeData) {
     console.log('Instructions displayed');
 }
 
-// ✅ AMÉLIORER LA FONCTION DE FERMETURE DES MODAUX
+// Close modal
 function closeModal(id) {
     const modal = document.getElementById(id);
     if (modal) {
         modal.classList.add('hidden');
         
-        // ✅ NETTOYER LA CARTE QUAND ON FERME LE MODAL DE NAVIGATION
         if (id === 'navigationModal' && navigationMap) {
             setTimeout(() => {
                 navigationMap.remove();
                 navigationMap = null;
                 console.log('Navigation map cleaned up');
-            }, 300); // Délai pour l'animation de fermeture
+            }, 300);
         }
     }
 }
@@ -845,28 +819,104 @@ function showProblemModal(deliveryId) {
 function cancelDelivery(deliveryId) {
     console.log('Tentative d\'annulation pour la livraison:', deliveryId);
     
-    if (confirm('Êtes-vous sûr de vouloir annuler cette livraison ?')) {
-        const form = document.getElementById('cancelForm');
-        
-        if (typeof cancelRouteUrl !== 'undefined') {
-            form.action = cancelRouteUrl.replace(':commandeId', deliveryId);
-        } else {
-            form.action = `/livreur/livraisons/${deliveryId}/annuler`;
-        }
-        
-        form.reset();
-        
-        const errorContainer = document.getElementById('cancelFormErrors');
-        if (errorContainer) {
-            errorContainer.classList.add('hidden');
-            errorContainer.innerHTML = '';
-        }
-        
-        console.log('URL d\'annulation:', form.action);
-        openModal('cancelModal');
+    // Configurer le formulaire d'annulation
+    const form = document.getElementById('cancelForm');
+    form.action = `/livreur/livraisons/${deliveryId}/annuler`;
+    form.reset();
+    
+    // Réinitialiser les messages d'erreur
+    const errorContainer = document.getElementById('cancelFormErrors');
+    if (errorContainer) {
+        errorContainer.classList.add('hidden');
+        errorContainer.innerHTML = '';
     }
+    
+    // Ouvrir la modal
+    openModal('cancelModal');
 }
 
+// Configuration de la soumission du formulaire d'annulation
+document.addEventListener('DOMContentLoaded', function() {
+    const cancelForm = document.getElementById('cancelForm');
+    
+    if (cancelForm) {
+        cancelForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(cancelForm);
+            const submitBtn = cancelForm.querySelector('button[type="submit"]');
+            const submitText = submitBtn.querySelector('.submit-text');
+            const originalText = submitText.textContent;
+            
+            // Afficher l'indicateur de chargement
+            submitBtn.disabled = true;
+            submitText.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Traitement...';
+            
+            // Cacher les erreurs précédentes
+            const errorContainer = document.getElementById('cancelFormErrors');
+            if (errorContainer) {
+                errorContainer.classList.add('hidden');
+                errorContainer.innerHTML = '';
+            }
+            
+            // Envoyer la requête
+            fetch(cancelForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Afficher le message de succès
+                    alert(data.message);
+                    
+                    // Fermer la modal et recharger la page
+                    closeModal('cancelModal');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    // Afficher les erreurs
+                    if (data.errors) {
+                        let errorHtml = '<ul class="list-disc pl-5">';
+                        for (const field in data.errors) {
+                            data.errors[field].forEach(error => {
+                                errorHtml += `<li>${error}</li>`;
+                            });
+                        }
+                        errorHtml += '</ul>';
+                        
+                        if (errorContainer) {
+                            errorContainer.innerHTML = errorHtml;
+                            errorContainer.classList.remove('hidden');
+                        }
+                    } else if (data.message) {
+                        if (errorContainer) {
+                            errorContainer.textContent = data.message;
+                            errorContainer.classList.remove('hidden');
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                if (errorContainer) {
+                    errorContainer.textContent = 'Une erreur réseau est survenue';
+                    errorContainer.classList.remove('hidden');
+                }
+            })
+            .finally(() => {
+                // Restaurer le bouton
+                submitBtn.disabled = false;
+                submitText.textContent = originalText;
+            });
+        });
+    }
+});
 // Submit form function
 function submitForm(form) {
     const formData = new FormData(form);
@@ -978,7 +1028,13 @@ function openModal(id) {
     const modal = document.getElementById(id);
     if (modal) {
         modal.classList.remove('hidden');
-        console.log('Modal opened:', id);
+    }
+}
+
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.classList.add('hidden');
     }
 }
 
@@ -1058,5 +1114,6 @@ setInterval(() => {
             .catch(err => console.error('Erreur refresh status:', err));
     }
 }, 60000);
-</script>
+    </script>
+
 @endsection

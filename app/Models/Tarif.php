@@ -8,8 +8,9 @@ class Tarif extends Model
 {
     protected $fillable = [
         'zone', 'type_livraison', 'tranche_distance', 
-        'tranche_poids', 'prix',  'type_zone' 
+        'tranche_poids', 'prix', 'type_zone' 
     ];
+
     public static function distancesOptions()
     {
         return [
@@ -29,63 +30,59 @@ class Tarif extends Model
             '50+ kg' => '50+ kg'
         ];
     }
-     public static function typeZoneOptions()
-     {
-         return [
-             'intra_urbaine' => 'Intra-urbaine',
-             'region_proche' => 'Région proche',
+
+    public static function typeZoneOptions()
+    {
+        return [
+            'intra_urbaine' => 'Intra-urbaine',
+            'region_proche' => 'Région proche',
             'region_eloignee' => 'Région éloignée',
-             'extra_urbaine' => 'Extra-urbaine'
         ];
-     }
-   
-     public static function findTarif($regionDepart, $regionArrivee, $serviceType, $weightRange)
-{
-   // 1. Trouver la zone correspondante
-   $zone = Zone::where('region_depart', $regionDepart)
-   ->where('region_arrivee', $regionArrivee)
-   ->first();
+    }
 
-if (!$zone) {
-return null;
-}
+    public static function findTarif($regionDepart, $regionArrivee, $serviceType, $weightRange)
+    {
+        // 1. Trouver la zone correspondante (vérifier A → B ou B → A)
+        $zone = Zone::where(function ($query) use ($regionDepart, $regionArrivee) {
+            $query->where('region_depart', $regionDepart)
+                  ->where('region_arrivee', $regionArrivee)
+                  ->orWhere(function ($query) use ($regionDepart, $regionArrivee) {
+                      $query->where('region_depart', $regionArrivee)
+                            ->where('region_arrivee', $regionDepart);
+                  });
+        })->first();
 
-// Normaliser le type de service (standard/express) pour qu'il corresponde à la BDD
-$serviceType = strtolower($serviceType);
+        if (!$zone) {
+            \Log::info("Aucune zone trouvée pour {$regionDepart} → {$regionArrivee}");
+            return null;
+        }
 
-// 2. Trouver le tarif en utilisant le type_zone de la Zone trouvée
-$tarif = self::where('zone', $zone->type_zone)
-    ->where('type_livraison', $serviceType)
-    ->where('tranche_poids', $weightRange)
-    ->first();
+        $serviceType = strtolower($serviceType);
 
-// Si aucun tarif n'est trouvé, on peut essayer une recherche plus large
-if (!$tarif) {
-// Rechercher par le type de zone seulement pour voir ce qui est disponible
-$tarifsZone = self::where('zone', $zone->type_zone)->get();
+        // 2. Trouver le tarif correspondant
+        $tarif = self::where('zone', $zone->type_zone)
+                     ->where('type_livraison', $serviceType)
+                     ->where('tranche_poids', $weightRange)
+                     ->first();
 
-// Si des tarifs existent pour cette zone, vérifier si c'est le type de livraison ou le poids qui pose problème
-if ($tarifsZone->count() > 0) {
- // Vérifier si le type de livraison existe
- $serviceTypeExists = $tarifsZone->where('type_livraison', $serviceType)->count() > 0;
- 
- // Vérifier si la tranche de poids existe
- $weightRangeExists = $tarifsZone->where('tranche_poids', $weightRange)->count() > 0;
- 
- // Log des informations pour le débogage
- \Log::info('Type de livraison: ' . $serviceType . ' existe: ' . ($serviceTypeExists ? 'Oui' : 'Non'));
- \Log::info('Tranche de poids: ' . $weightRange . ' existe: ' . ($weightRangeExists ? 'Oui' : 'Non'));
- 
- // Chercher par correspondance partielle si nécessaire
- if (!$serviceTypeExists || !$weightRangeExists) {
-     \Log::info('Tentative de correspondance partielle...');
-     
-     // Sélectionner le premier tarif disponible pour cette zone comme fallback
-     return $tarifsZone->first();
- }
-}
-}
+        if (!$tarif) {
+            $tarifsZone = self::where('zone', $zone->type_zone)->get();
 
-return $tarif;
-}
+            if ($tarifsZone->count() > 0) {
+                $serviceTypeExists = $tarifsZone->where('type_livraison', $serviceType)->count() > 0;
+                $weightRangeExists = $tarifsZone->where('tranche_poids', $weightRange)->count() > 0;
+
+                \Log::info('Type de livraison: ' . $serviceType . ' existe: ' . ($serviceTypeExists ? 'Oui' : 'Non'));
+                \Log::info('Tranche de poids: ' . $weightRange . ' existe: ' . ($weightRangeExists ? 'Oui' : 'Non'));
+
+                if (!$serviceTypeExists || !$weightRangeExists) {
+                    \Log::info('Tentative de correspondance partielle...');
+                    // Sélectionner le premier tarif disponible pour cette zone comme fallback
+                    return $tarifsZone->first();
+                }
+            }
+        }
+
+        return $tarif;
+    }
 }

@@ -77,136 +77,117 @@
         </form>
 
         <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Client</th>
-                        <th>Livreur</th>
-                        <th>Adresse de Livraison</th>
-                        <th>Statut</th>
-                        <th>Problème</th>
-                        <th>Prix</th>
-                        <th>Date de Création</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($livraisons as $livraison)
-                    <tr class="{{ $livraison->probleme_signale ? 'table-warning' : '' }}">
-                        <td><strong>#{{ $livraison->id }}</strong></td>
-                        <td>
-                            <div>{{ $livraison->user->name ?? 'N/A' }}</div>
-                            <small class="text-muted">{{ $livraison->user->email ?? '' }}</small>
-                        </td>
-                        <td>
-                            @if($livraison->driver)
-                                <span class="badge bg-info">{{ $livraison->driver->name }}</span>
-                            @else
-                                <span class="badge bg-secondary">Non assigné</span>
-                            @endif
-                        </td>
-                        <td>
-                            <div class="text-truncate" style="max-width: 200px;" title="{{ $livraison->adresse_arrivee }}">
-                                {{ $livraison->adresse_arrivee }}
-                            </div>
-                            @if($livraison->details_adresse_arrivee)
-                                <small class="text-muted">{{ $livraison->details_adresse_arrivee }}</small>
-                            @endif
-                        </td>
-                        <td>
-                            @php
-                                $statusColors = [
-                                    'en_attente_paiement' => 'secondary',
-                                    'payee' => 'info',
-                                    'confirmee' => 'primary',
-                                    'acceptee' => 'warning',
-                                    'en_cours' => 'primary',
-                                    'livree' => 'success',
-                                    'probleme_signale' => 'danger',
-                                    'annulee' => 'dark'
-                                ];
-                                $statusLabels = [
-                                    'en_attente_paiement' => 'En attente',
-                                    'payee' => 'Payée',
-                                    'confirmee' => 'Confirmée',
-                                    'acceptee' => 'Acceptée',
-                                    'en_cours' => 'En cours',
-                                    'livree' => 'Livrée',
-                                    'probleme_signale' => 'Problème',
-                                    'annulee' => 'Annulée'
-                                ];
-                            @endphp
-                            <span class="badge bg-{{ $statusColors[$livraison->status] ?? 'secondary' }}">
-                                {{ $statusLabels[$livraison->status] ?? $livraison->status }}
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Client</th>
+                <th>Livreur</th>
+                <th>Adresse de Livraison</th>
+                <th>Statut</th>
+                <th>Problème</th>
+                <th>Prix</th>
+                <th>Date de Création</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($livraisons as $livraison)
+            <tr class="{{ $livraison->probleme_signale ? 'table-warning' : '' }}">
+                <td><strong>#{{ $livraison->id }}</strong></td>
+                <td>
+                    <div>{{ $livraison->user->name ?? 'N/A' }}</div>
+                    <small class="text-muted">{{ $livraison->user->email ?? '' }}</small>
+                </td>
+                <td>
+                    @if($livraison->driver)
+                        <span class="badge bg-info">{{ $livraison->driver->name }}</span>
+                    @else
+                        <span class="badge bg-secondary">Non assigné</span>
+                    @endif
+                </td>
+                <td>
+                    <div class="text-truncate" style="max-width: 200px;" title="{{ $livraison->adresse_arrivee }}">
+                        {{ $livraison->adresse_arrivee }}
+                    </div>
+                    @if($livraison->details_adresse_arrivee)
+                        <small class="text-muted">{{ $livraison->details_adresse_arrivee }}</small>
+                    @endif
+                </td>
+                <td>
+                    @php
+                        $statusColors = [
+                            'en_attente_paiement' => 'secondary',
+                            'payee' => 'info',
+                            'confirmee' => 'primary',
+                            'acceptee' => 'warning',
+                            'en_cours' => 'primary',
+                            'livree' => 'success',
+                            'probleme_signale' => 'danger',
+                            'annulee' => 'dark'
+                        ];
+                        $statusLabels = [
+                            'en_attente_paiement' => 'En attente',
+                            'payee' => 'Payée',
+                            'confirmee' => 'Confirmée',
+                            'acceptee' => 'Acceptée',
+                            'en_cours' => 'En cours',
+                            'livree' => 'Livrée',
+                            'probleme_signale' => 'Problème',
+                            'annulee' => 'Annulée'
+                        ];
+                    @endphp
+                    <span class="badge bg-{{ $statusColors[$livraison->status] ?? 'secondary' }}">
+                        {{ $statusLabels[$livraison->status] ?? $livraison->status }}
+                    </span>
+                </td>
+                <td>
+                    @if($livraison->probleme_signale)
+                        @php
+                            $probleme = is_array($livraison->probleme_signale) 
+                                ? $livraison->probleme_signale 
+                                : json_decode($livraison->probleme_signale, true);
+                        @endphp
+                        
+                        @if(is_array($probleme) && !empty($probleme))
+                            <span class="badge bg-danger" title="{{ $probleme['description'] ?? 'Description non disponible' }}">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                {{ isset($probleme['type_probleme']) ? ucfirst(str_replace('_', ' ', $probleme['type_probleme'])) : 'Problème' }}
                             </span>
-                        </td>
-                        <td>
-                            @if($livraison->probleme_signale)
-                                @php
-                                    $probleme = is_array($livraison->probleme_signale) 
-                                        ? $livraison->probleme_signale 
-                                        : json_decode($livraison->probleme_signale, true);
-                                @endphp
-                                
-                                @if(is_array($probleme) && !empty($probleme))
-                                    <span class="badge bg-danger" title="{{ $probleme['description'] ?? 'Description non disponible' }}">
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                        {{ isset($probleme['type_probleme']) ? ucfirst(str_replace('_', ' ', $probleme['type_probleme'])) : 'Problème' }}
-                                    </span>
-                                    @if(isset($probleme['status']))
-                                        <small class="d-block {{ $probleme['status'] === 'en_attente' ? 'text-danger' : 'text-success' }}">
-                                            {{ $probleme['status'] === 'en_attente' ? 'À traiter' : 'Traité' }}
-                                        </small>
-                                    @endif
-                                @else
-                                    <span class="text-muted">Données invalides</span>
-                                @endif
-                            @else
-                                <span class="text-muted">-</span>
+                            @if(isset($probleme['status']))
+                                <small class="d-block {{ $probleme['status'] === 'en_attente' ? 'text-danger' : 'text-success' }}">
+                                    {{ $probleme['status'] === 'en_attente' ? 'À traiter' : 'Traité' }}
+                                </small>
                             @endif
-                        </td>
-                        <td><strong>{{ number_format($livraison->prix_final, 0, ',', ' ') }} FCFA</strong></td>
-                        <td>
-                            <div>{{ $livraison->created_at->format('d/m/Y') }}</div>
-                            <small class="text-muted">{{ $livraison->created_at->format('H:i') }}</small>
-                        </td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <a href="{{ route('admin.livraisons.show', $livraison->id) }}" class="btn btn-info" title="Voir détails">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                @if($livraison->probleme_signale)
-                                    <button type="button" class="btn btn-warning" onclick="ouvrirModalProbleme({{ $livraison->id }})" title="Traiter problème">
-                                        <i class="fas fa-tools"></i>
-                                    </button>
-                                @endif
-                                <div class="btn-group">
-                                    <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                                        <i class="fas fa-cog"></i>
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="#" onclick="changerStatut({{ $livraison->id }})">Changer statut</a></li>
-                                        @if(!$livraison->driver_id)
-                                            <li><a class="dropdown-item" href="#" onclick="assignerLivreur({{ $livraison->id }})">Assigner livreur</a></li>
-                                        @endif
-                                    </ul>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="9" class="text-center py-4">
-                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">Aucune livraison trouvée</p>
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
+                        @else
+                            <span class="text-muted">Données invalides</span>
+                        @endif
+                    @else
+                        <span class="text-muted">-</span>
+                    @endif
+                </td>
+                <td><strong>{{ number_format($livraison->prix_final, 0, ',', ' ') }} FCFA</strong></td>
+                <td>
+                    <div>{{ $livraison->created_at->format('d/m/Y') }}</div>
+                    <small class="text-muted">{{ $livraison->created_at->format('H:i') }}</small>
+                </td>
+                <td>
+                    <a href="{{ route('admin.livraisons.show', $livraison->id) }}" class="btn btn-info btn-sm" title="Voir détails">
+                        <i class="fas fa-eye"></i> Détails
+                    </a>
+                </td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="9" class="text-center py-4">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Aucune livraison trouvée</p>
+                </td>
+            </tr>
+            @endforelse
+        </tbody>
+    </table>
+</div>
         <!-- Pagination -->
         <div class="d-flex justify-content-center mt-4">
             {{ $livraisons->appends(request()->query())->links() }}
@@ -266,61 +247,6 @@
 @endsection
 
 @push('scripts')
-<script>
-document.getElementById('filtres-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    const params = new URLSearchParams(formData);
-    window.location.href = window.location.pathname + '?' + params.toString();
-});
+    <script src="{{ asset('js/livraison.js') }}"></script>
 
-function ouvrirModalProbleme(livraisonId) {
-    fetch(`/admin/livraisons/${livraisonId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.probleme) {
-                document.getElementById('detailsProbleme').innerHTML = `
-                    <div class="alert alert-warning">
-                        <h6><i class="fas fa-exclamation-triangle"></i> Problème signalé</h6>
-                        <p><strong>Type:</strong> ${data.probleme.type_probleme.replace('_', ' ')}</p>
-                        <p><strong>Description:</strong> ${data.probleme.description}</p>
-                        <p><strong>Signalé le:</strong> ${new Date(data.probleme.date_signalement).toLocaleString()}</p>
-                        <p><strong>Livreur:</strong> ${data.livreur_name}</p>
-                        ${data.probleme.photo ? `<img src="/storage/${data.probleme.photo}" class="img-fluid mt-2" style="max-height: 200px;">` : ''}
-                    </div>
-                `;
-                
-                document.getElementById('formProbleme').action = `/admin/livraisons/${livraisonId}/resoudre-probleme`;
-                new bootstrap.Modal(document.getElementById('modalProbleme')).show();
-            }
-        });
-}
-
-// Afficher/masquer le champ nouveau livreur
-document.querySelector('select[name="action"]').addEventListener('change', function() {
-    const divNouveauLivreur = document.getElementById('divNouveauLivreur');
-    if (this.value === 'reassigner') {
-        divNouveauLivreur.style.display = 'block';
-        document.querySelector('select[name="nouveau_driver_id"]').required = true;
-    } else {
-        divNouveauLivreur.style.display = 'none';
-        document.querySelector('select[name="nouveau_driver_id"]').required = false;
-    }
-});
-
-function exportLivraisons() {
-    const params = new URLSearchParams(window.location.search);
-    window.location.href = '/admin/livraisons/export?' + params.toString();
-}
-
-function changerStatut(livraisonId) {
-    // Implémentation du changement de statut
-    // Vous pouvez créer un autre modal pour cela
-}
-
-function assignerLivreur(livraisonId) {
-    // Implémentation de l'assignation de livreur
-    // Vous pouvez créer un autre modal pour cela
-}
-</script>
 @endpush

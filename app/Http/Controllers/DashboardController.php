@@ -101,9 +101,8 @@ class DashboardController extends Controller
     {
         $trajet = TrajetUrbain::with('livreur')->findOrFail($trajetId);
 
-         // ✅ Récupérer toutes les livraisons non assignées
-    $livraisons = Commnande::whereNull('driver_id')   // pas encore affectées
-        ->where('status', '!=', 'livree')             // pas terminées
+    $livraisons = Commnande::whereNull('driver_id')   
+        ->where('status', '!=', 'livree')             
         ->where(function($query) use ($trajet) {
             // ✅ Filtrer par région de destination du trajet
             $query->where('region_arrivee', $trajet->destination_region)
@@ -115,43 +114,7 @@ class DashboardController extends Controller
         return view('admin.trajets.assigner', compact('trajet', 'livraisons'));
     }
 
-    /**
-     * Assigne les livraisons sélectionnées à un livreur pour un trajet donné
-     */
-    // public function assignerLivraisons(Request $request, $trajetId)
-    // {
-    //     $trajet = TrajetUrbain::with('livreur')->findOrFail($trajetId);
 
-    //     $livraisonsIds = $request->input('livraisons', []);
-
-    //     if (!empty($livraisonsIds)) {
-    //         Commnande::whereIn('id', $livraisonsIds)->update([
-    //             'driver_id' => $trajet->livreur->id,
-    //             'status' => 'payee'
-    //         ]);
-    //     }
-
-    //     return redirect()->route('admin.trajets.urbains')
-    //         ->with('success', '✅ Les livraisons ont été assignées à ' . $trajet->livreur->name);
-    // }
-
-//  good   public function assignerLivraisons(Request $request, $trajetId)
-// {
-//     $trajet = TrajetUrbain::with('livreur')->findOrFail($trajetId);
-
-//     $livraisonsIds = $request->input('livraisons', []);
-
-//     if (!empty($livraisonsIds)) {
-//         Commnande::whereIn('id', $livraisonsIds)->update([
-//             'driver_id' => $trajet->livreur->id,
-//             'trajet_id' => $trajet->id, // ✅ Ajout du lien avec le trajet
-//             'status' => 'payee'
-//         ]);
-//     }
-
-//     return redirect()->route('admin.trajets.urbains')
-//         ->with('success', '✅ Les livraisons ont été assignées à ' . $trajet->livreur->name);
-// }
 
 public function assignerLivraisons(Request $request, $trajetId)
 {

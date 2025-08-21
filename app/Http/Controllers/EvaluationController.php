@@ -20,12 +20,10 @@ class EvaluationController extends Controller
 
         $commande = Commnande::findOrFail($request->commande_id);
 
-        // Vérifier que la commande appartient au client connecté
         if ($commande->user_id !== auth()->id()) {
             return back()->with('error', 'Vous ne pouvez pas noter une livraison qui ne vous appartient pas.');
         }
 
-        // Vérifier qu'il n'y a pas déjà une évaluation pour cette commande par ce client
         $existing = Evaluation::where('commande_id', $commande->id)
             ->where('type_evaluation', 'client')
             ->first();

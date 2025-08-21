@@ -3,14 +3,14 @@
 @section('title', 'Mes Commandes')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+<div class="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-50">
     <div class="max-w-4xl mx-auto px-4 py-6">
         
         <!-- Header avec bouton retour -->
         <div class="flex items-center justify-between mb-8">
             <div class="flex items-center space-x-4">
                 <a href="{{ url()->previous() }}" 
-                   class="flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-md hover:shadow-lg transition-all duration-200 text-gray-600 hover:text-blue-600 group">
+                   class="flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-md hover:shadow-lg transition-all duration-200 text-gray-600 hover:text-red-600 group">
                     <i class="fas fa-arrow-left text-lg group-hover:transform group-hover:-translate-x-0.5 transition-transform"></i>
                 </a>
                 <div>
@@ -44,11 +44,11 @@
                 <div class="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 overflow-hidden group">
                     
                     <!-- En-tête de la commande -->
-                    <div class="bg-gradient-to-r from-gray-50 to-blue-50 px-6 py-4 border-b border-gray-100">
+                    <div class="bg-gradient-to-r from-red-50 to-red-50 px-6 py-4 border-b border-gray-100">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <i class="fas fa-shipping-fast text-blue-600"></i>
+                                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-shipping-fast text-red-600"></i>
                                 </div>
                                 <div>
                                     <p class="text-sm font-medium text-gray-900">Commande #{{ str_pad($commande->id, 6, '0', STR_PAD_LEFT) }}</p>
@@ -65,14 +65,14 @@
                                 @else 
                                     bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-200
                                 @endif">
-                                @if($commande->statut == 'LIVRÉE')
+                                @if($commande->status == 'LIVRÉE')
                                     <i class="fas fa-check-circle mr-1"></i>
-                                @elseif($commande->statut == 'ANNULÉE')
+                                @elseif($commande->status == 'ANNULÉE')
                                     <i class="fas fa-times-circle mr-1"></i>
                                 @else
                                     <i class="fas fa-clock mr-1"></i>
                                 @endif
-                                {{ strtoupper($commande->statut) }}
+                                {{ strtoupper($commande->status) }}
                             </span>
                         </div>
                     </div>
@@ -84,13 +84,13 @@
                         <div class="mb-6">
                             <div class="flex items-center space-x-4">
                                 <div class="flex-shrink-0">
-                                    <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                    <div class="w-3 h-3 bg-red-500 rounded-full"></div>
                                     <div class="w-0.5 h-8 bg-gray-300 mx-auto my-1"></div>
                                     <div class="w-3 h-3 bg-green-500 rounded-full"></div>
                                 </div>
                                 <div class="flex-1 space-y-3">
                                     <div class="flex items-center">
-                                        <i class="fas fa-map-marker-alt text-blue-500 mr-2"></i>
+                                        <i class="fas fa-map-marker-alt text-red-600 mr-2"></i>
                                         <span class="text-gray-700 font-medium">{{ $commande->adresse_depart }}</span>
                                     </div>
                                     <div class="flex items-center">
@@ -116,11 +116,11 @@
                                     <i class="fas fa-money-bill-wave text-gray-600"></i>
                                     <span class="text-sm font-medium text-gray-600">Montant</span>
                                 </div>
-                                <p class="text-lg font-bold text-blue-600">{{ number_format($commande->prix_final, 0, ',', ' ') }} FCFA</p>
+                                <p class="text-lg font-bold text-red-600">{{ number_format($commande->prix_final, 0, ',', ' ') }} FCFA</p>
                             </div>
                         </div>
 
-                        <!-- Actions -->
+                        <!-- Info livreur -->
                         <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
                             <div class="flex items-center space-x-4 text-sm text-gray-500">
                                 @if($commande->livreur)
@@ -130,20 +130,7 @@
                                     </span>
                                 @endif
                             </div>
-                            
-                            <div class="flex items-center space-x-2">
-                                @if($commande->statut == 'LIVRÉE')
-                                    <button class="flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                                        <i class="fas fa-redo mr-2"></i>
-                                        Recommander
-                                    </button>
-                                @endif
-                                
-                                <button class="flex items-center px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                    <i class="fas fa-eye mr-2"></i>
-                                    Détails
-                                </button>
-                            </div>
+                            {{-- Plus de boutons --}}
                         </div>
                     </div>
                 </div>
@@ -156,7 +143,7 @@
                     <h3 class="text-xl font-semibold text-gray-900 mb-2">Aucune livraison</h3>
                     <p class="text-gray-500 mb-6">Vous n'avez pas encore effectué de commande.</p>
                     <a href="{{ route('livraison.create') }}" 
-                       class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                       class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-medium rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-lg hover:shadow-xl">
                         <i class="fas fa-plus mr-2"></i>
                         Faire une livraison
                     </a>

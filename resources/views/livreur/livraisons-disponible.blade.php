@@ -9,7 +9,7 @@
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
     <div class="bg-white rounded-lg shadow-md p-6">
         <div class="flex items-center">
-            <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+            <div class="p-3 rounded-full bg-red-100 text-red-500">
                 <i class="fas fa-box"></i>
             </div>
             <div class="ml-4">
@@ -21,7 +21,7 @@
     
     <div class="bg-white rounded-lg shadow-md p-6">
         <div class="flex items-center">
-            <div class="p-3 rounded-full bg-green-100 text-green-600">
+            <div class="p-3 rounded-full bg-red-100 text-red-500">
                 <i class="fas fa-check-circle"></i>
             </div>
             <div class="ml-4">
@@ -59,15 +59,14 @@
                 </div>
                 
                 <div class="inline-block">
-                    <select name="type_colis" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5">
-                        <option value="">Tous les types</option>
-                        <option value="0-5kg" {{ request('type_colis') == '0-5kg' ? 'selected' : '' }}>0-5 kg</option>
-                        <option value="5-10kg" {{ request('type_colis') == '5-10kg' ? 'selected' : '' }}>5-10 kg</option>
-                        <option value="10-20kg" {{ request('type_colis') == '10-20kg' ? 'selected' : '' }}>10-20 kg</option>
-                        <option value="20kg+" {{ request('type_colis') == '20-50kg' ? 'selected' : '' }}>20 kg et +</option>
-                        <option value="20kg+" {{ request('type_colis') == '250kg+' ? 'selected' : '' }}>20 kg et +</option>
+                      <select name="type_colis" class="...">
+                       <option value="">Tous les types</option>
+                        <option value="0-5 kg" {{ request('type_colis') == '0-5 kg' ? 'selected' : '' }}>0-5 kg</option>
+                         <option value="5-20 kg" {{ request('type_colis') == '5-20 kg' ? 'selected' : '' }}>5-20 kg</option>
+                         <option value="20-50 kg" {{ request('type_colis') == '20-50 kg' ? 'selected' : '' }}>20-50 kg</option>
+                        <option value="50+ kg" {{ request('type_colis') == '50+ kg' ? 'selected' : '' }}>50+ kg</option>
+                          </select>
 
-                    </select>
                 </div>
 
                 <div class="inline-block">
@@ -80,7 +79,7 @@
             </div>
             
             <div class="flex space-x-2">
-                <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center">
+                <button type="submit" class="bg-red-500 hover:bg-red-500 text-white px-4 py-2 rounded-lg flex items-center">
                     <i class="fas fa-search mr-2"></i> Rechercher
                 </button>
                 <a href="{{ route('livreur.livraisons-disponible') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg flex items-center">
@@ -125,7 +124,7 @@
                                     {{ ucfirst($commande->type_colis) }}
                                 </span>
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    {{ number_format($commande->prix_final) }} FCFA
+                                {{ number_format($commande->prix_final, 0, '', ' ') }} FCFA
                                 </span>
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
                                     {{ $commande->type_livraison == 'express' ? 'bg-red-100 text-red-800' : 'bg-purple-100 text-purple-800' }}">
@@ -151,7 +150,7 @@
                             <button onclick="voirDetails({{ $commande->id }})" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg shadow-sm">
                                 <i class="fas fa-info-circle"></i>
                             </button>
-                            <button onclick="accepterCommande({{ $commande->id }})" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow-sm accepter-btn">
+                            <button onclick="accepterCommande({{ $commande->id }})" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-sm accepter-btn">
                                 <i class="fas fa-check mr-1"></i> Accepter
                             </button>
                         </div>
@@ -192,79 +191,6 @@
 @endsection
 
 @section('scripts')
-<script>
-let isAccepting = false;
+    <script src="{{ asset('js/livraisondisponible.js') }}"></script>
 
-function accepterCommande(commandeId) {
-    if (isAccepting) return;
-    if (!confirm('Êtes-vous sûr de vouloir accepter cette commande ?')) return;
-    isAccepting = true;
-
-    const btn = event.target.closest('.accepter-btn');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Acceptation...';
-    btn.disabled = true;
-
-    fetch(`/livreur/commandes/${commandeId}/accepter`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            btn.innerHTML = '<i class="fas fa-check mr-1"></i> Acceptée';
-            btn.classList.remove('bg-green-500', 'hover:bg-green-600');
-            btn.classList.add('bg-gray-500', 'cursor-not-allowed');
-            setTimeout(() => window.location.reload(), 1500);
-        } else {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            alert(data.message || 'Une erreur est survenue');
-        }
-    })
-    .catch(() => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        alert('Erreur réseau');
-    })
-    .finally(() => isAccepting = false);
-}
-
-function voirDetails(commandeId) {
-    fetch(`/livreur/commandes/${commandeId}/details`, {
-        headers: {
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            const c = data.commande;
-            document.getElementById('detailsContent').innerHTML = `
-                <div class="space-y-3">
-                    <div><p class="text-sm font-medium text-gray-500">Référence</p><p class="text-sm">${c.reference}</p></div>
-                    <div><p class="text-sm font-medium text-gray-500">Client</p><p class="text-sm">${c.user.name} (${c.user.phone})</p></div>
-                    <div><p class="text-sm font-medium text-gray-500">Adresse de départ</p><p class="text-sm">${c.adresse_depart}</p></div>
-                    <div><p class="text-sm font-medium text-gray-500">Adresse d'arrivée</p><p class="text-sm">${c.adresse_arrivee}</p></div>
-                    <div><p class="text-sm font-medium text-gray-500">Type de colis</p><p class="text-sm">${c.type_colis}</p></div>
-                    <div><p class="text-sm font-medium text-gray-500">Prix</p><p class="text-sm">${c.prix_final} FCFA</p></div>
-                    <div><p class="text-sm font-medium text-gray-500">Date de création</p><p class="text-sm">${new Date(c.created_at).toLocaleString()}</p></div>
-                    ${c.notes ? `<div><p class="text-sm font-medium text-gray-500">Notes</p><p class="text-sm">${c.notes}</p></div>` : ''}
-                </div>`;
-            document.getElementById('detailsModal').classList.remove('hidden');
-        } else {
-            alert('Impossible de charger les détails');
-        }
-    })
-    .catch(() => alert('Erreur lors du chargement des détails'));
-}
-
-function fermerModal() {
-    document.getElementById('detailsModal').classList.add('hidden');
-}
-</script>
 @endsection

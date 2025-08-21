@@ -104,8 +104,6 @@
                         <i class="fas fa-map-marker-alt mr-1 text-red-500"></i> {{ $livraisonActuelle->adresse_depart }}
                     </span>
                     <span class="hidden sm:inline mx-2">•</span>
-                    <span>{{ $livraisonActuelle->distance ?? 'N/A' }} km</span>
-                    <span class="hidden sm:inline mx-2">•</span>
                     <span>15 min</span>
                 </div>
                 <div class="mt-2">
@@ -122,9 +120,6 @@
                     <i class="fas fa-truck-moving mr-2"></i>
                     Voir la livraison
                 </a>
-                <button class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg shadow-sm flex items-center">
-                    <i class="fas fa-phone"></i>
-                </button>
             </div>
         </div>
 
@@ -162,8 +157,7 @@
                                 <i class="fas fa-map-marker-alt mr-1 text-red-500"></i> 
                                 {{ $livraison->adresse_depart }}
                             </span>
-                            <span class="mx-2">•</span>
-                            <span>{{ $livraison->distance ?? 'N/A' }} km</span>
+                            
                         </div>
                         <div class="mt-2 flex space-x-2">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">

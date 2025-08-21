@@ -47,7 +47,7 @@
 
         <button type="submit"
             class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition font-semibold flex items-center justify-center space-x-2">
-            <span>✅ Enregistrer</span>
+            <span> Enregistrer</span>
         </button>
     </form>
 </div>

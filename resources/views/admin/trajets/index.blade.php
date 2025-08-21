@@ -13,7 +13,6 @@
                 <th class="p-2 border">Départ</th>
                 <th class="p-2 border">Destination</th>
                 <th class="p-2 border">Date</th>
-                <th class="p-2 border text-center">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -28,11 +27,6 @@
                 <td class="p-2 border text-center">
                     <!-- Bouton qui envoie vers la liste des livraisons pour cette destination -->
                     <form method="GET" action="{{ route('admin.trajets.assigner', $trajet->id) }}">
-                        <button 
-                            type="submit" 
-                            class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg shadow">
-                            📦 Assigner des livraisons
-                        </button>
                     </form>
                 </td>
             </tr>

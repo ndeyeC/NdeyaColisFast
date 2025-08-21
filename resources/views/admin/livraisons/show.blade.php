@@ -20,13 +20,12 @@
             </span></p>
             <p><strong>Prix :</strong> {{ number_format($livraison->prix_final, 2) }} FCFA</p>
             <p><strong>Type de livraison :</strong> {{ $livraison->type_livraison }}</p>
-            <p><strong>Mode de paiement :</strong> {{ $livraison->mode_paiement }}</p>
 
             <hr>
 
             <h5>Livreur assigné</h5>
             @if($livraison->driver)
-                <p>{{ $livraison->driver->name }} ({{ $livraison->driver->phone ?? 'Tél. non disponible' }})</p>
+                <p>{{ $livraison->driver->name }} ({{ $livraison->driver->numero_telephone ?? 'Tél. non disponible' }})</p>
             @else
                 <p class="text-muted"><em>Aucun livreur assigné</em></p>
             @endif
@@ -46,14 +45,14 @@
                     <div class="mb-2">
                         <strong>Message :</strong>
                         <div class="alert alert-light p-2 mt-1">
-                            {{ $problemeSignale['message'] ?? 'Aucun détail fourni' }}
+                            {{ $problemeSignale['description'] ?? 'Aucun détail fourni' }}
                         </div>
                     </div>
 
-                    @if(!empty($problemeSignale['date_signalement']))
+                    @if(!empty($problemeSignale['date']))
                         <div class="mb-2">
-                            <strong>Date :</strong>
-                            {{ \Carbon\Carbon::parse($problemeSignale['date_signalement'])->translatedFormat('d/m/Y \à H\hi') }}
+                            <strong>Date signalement:</strong>
+                            {{ \Carbon\Carbon::parse($problemeSignale['date'])->translatedFormat('d/m/Y \à H\hi') }}
                         </div>
                     @else
                         <div class="text-muted">
@@ -79,11 +78,6 @@
             <i class="fas fa-arrow-left"></i> Retour à la liste
         </a>
         
-        @if($livraison->status === 'probleme_signale')
-            <a href="{{ route('admin.livraisons.resolve', $livraison->id) }}" class="btn btn-success">
-                <i class="fas fa-check"></i> Marquer comme résolu
-            </a>
-        @endif
     </div>
 </div>
 @endsection

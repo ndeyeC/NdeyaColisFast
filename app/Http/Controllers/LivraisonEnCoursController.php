@@ -260,7 +260,7 @@ public function demarrerLivraison(Request $request, $commandeId)
     {
         $request->validate([
             'commentaire_livraison' => 'nullable|string|max:500',
-            'photo_livraison' => 'sometimes|image|max:2048',
+            // 'photo_livraison' => 'sometimes|image|max:2048',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric'
         ]);

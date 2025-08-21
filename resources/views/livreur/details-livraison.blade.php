@@ -346,9 +346,7 @@
 
 @section('scripts')
 <script>
-    // Scripts statiques pour la démo
     $(function() {
-        // Code pour la visualisation interactive sera implémenté ici
         console.log('Détails de livraison chargés');
     });
 </script>

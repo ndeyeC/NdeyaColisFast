@@ -23,6 +23,10 @@ use App\Http\Controllers\RevenulivreurController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\SmsController;
+use App\Http\Controllers\Admin\TokenPriceController;
+use App\Http\Controllers\PageController;
+
+
 
 
 
@@ -68,6 +72,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/livreurs/{livreur}', [LivreurController::class, 'show'])->name('livreurs.show');
     Route::delete('/livreurs/{livreur}', [LivreurController::class, 'destroy'])->name('livreurs.destroy');
     Route::get('/livreurs/{id}/json', [LivreurController::class, 'showJson']);
+    
 
     // Tarifs
     Route::resource('tarifs', TarifController::class);
@@ -111,13 +116,14 @@ Route::middleware(['auth', 'role:livreur'])->prefix('livreur')->name('livreur.')
     Route::get('/mes-commandes', [LivreurController::class, 'mesCommandes'])->name('commandes.mes-commandes');
     Route::get('/commandes/{id}', [LivreurController::class, 'detailsCommande'])->name('commandes.details');
     Route::get('/statistiques', [LivreurController::class, 'statistiques'])->name('statistiques');
-
+    
+    
     Route::get('/livraison-cours', [LivraisonEnCoursController::class, 'index'])->name('livraison-cours');
    // Correct : méthode demarrerLivraison() existante
 Route::post('/livraisons/{id}/demarrer', [LivraisonEnCoursController::class, 'demarrerLivraison'])->name('livraisons.demarrer');
     Route::post('/livraisons/{id}/marquer-livree', [LivraisonEnCoursController::class, 'marquerLivree'])->name('livraisons.marquer-livree');
     Route::post('/livraisons/{id}/signaler-probleme', [LivraisonEnCoursController::class, 'signalerProbleme'])->name('livraisons.signaler-probleme');
-    Route::post('/livraisons/{id}/annuler', [LivraisonEnCoursController::class, 'annuler'])->name('livraisons.annuler');
+    Route::post('/livraisons/{id}/annuler', [LivraisonEnCoursController::class, 'annulerLivraison'])->name('livraisons.annuler');
     Route::get('/livraisons/{id}/navigation', [LivraisonEnCoursController::class, 'ouvrirNavigation'])->name('livraisons.navigation');
     Route::get('/revenus', [RevenuLivreurController::class, 'revenusView'])->name('revenus');
     Route::get('/api/revenus/{id}', [RevenuLivreurController::class, 'getGraphData'])
@@ -132,11 +138,11 @@ Route::post('/livraisons/{id}/demarrer', [LivraisonEnCoursController::class, 'de
 
 // Client routes protégées
 Route::middleware(['auth', 'role:client'])->prefix('client')->name('client.')->group(function () {
-    Route::get('/dashboard', fn () => view('client.dashboard'))->name('dashboard');
     Route::get('/deliverers', fn () => view('client.deliverers'))->name('deliverers');
+  Route::post('/evaluations', [EvaluationController::class, 'store'])
+    ->name('evaluations');
 
     Route::get('/evaluations/create/{commande}', [EvaluationController::class, 'create'])->name('evaluations.create');
-    Route::post('/evaluations', [EvaluationController::class, 'store'])->name('evaluations.store');
 
 
     Route::get('/aide', fn () => view('client.aide'))->name('aide');
@@ -152,28 +158,63 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/tokens', [TokenController::class, 'index'])->name('tokens.index');
     Route::post('/tokens/purchase', [TokenController::class, 'purchase'])->name('tokens.purchase');
     Route::get('/api/tokens/balance', [TokenController::class, 'getBalance']);
-
     Route::get('/statistiques', [StatistiquesController::class, 'index'])->name('statistiques.index');
-    Route::get('/statistiques/periode', [StatistiquesController::class, 'getStatistiquesPeriode'])->name('statistiques.periode');
-
     Route::post('/user/fcm-token', [UserController::class, 'saveFcmToken']);
 });
 
-// Routes commandes accessibles sans rôle (création, paiement...)
-Route::get('/commnandes/create', [CommnandeController::class, 'create'])->name('commnandes.create');
-Route::post('/commnandes', [CommnandeController::class, 'store'])->name('commnandes.store');
-Route::get('/commnandes/confirmation/{id}', [CommnandeController::class, 'confirmation'])->name('commnandes.confirmation');
-Route::get('/commnandes/payment/success', [CommnandeController::class, 'paymentSuccess'])->name('commnandes.payment.success');
-Route::get('/commnandes/payment/cancel', [CommnandeController::class, 'paymentCancel'])->name('commnandes.payment.cancel');
-Route::match(['GET', 'POST'], '/commnandes/payment/ipn', [CommnandeController::class, 'ipnCallback'])->name('commnandes.payment.ipn');
-Route::get('/commnandes/index', [CommnandeController::class, 'index'])->name('commnandes.index');
-Route::get('/commnandes/{commnande}', [CommnandeController::class, 'show'])->name('commnandes.show');
 
+
+Route::middleware(['auth', 'role:client'])->group(function () {
+    Route::get('/commnandes/create', [CommnandeController::class, 'create'])->name('commnandes.create');
+    Route::post('/commnandes/{id}/confirm', [CommnandeController::class, 'confirm'])->name('commnandes.confirm');
+    Route::post('/commnandes', [CommnandeController::class, 'store'])->name('commnandes.store');
+    Route::get('/dashboard', [CommnandeController::class, 'index'])->name('dashboard');
+    Route::get('/commnandes/confirmation/{id}', [CommnandeController::class, 'confirmation'])->name('commnandes.confirmation');
+    Route::get('/commnandes/payment/success', [CommnandeController::class, 'paymentSuccess'])->name('commnandes.payment.success');
+    Route::get('/commnandes/payment/cancel', [CommnandeController::class, 'paymentCancel'])->name('commnandes.payment.cancel');
+    Route::match(['GET', 'POST'], '/commnandes/payment/ipn', [CommnandeController::class, 'ipnCallback'])->name('commnandes.payment.ipn');
+    Route::get('/commnandes/index', [CommnandeController::class, 'index'])->name('commnandes.index');
+    Route::get('/commnandes/{commnande}', [CommnandeController::class, 'show'])->name('commnandes.show');
+});
 // Divers
 Route::get('/suggestions', [\App\Http\Controllers\SuggestionController::class, 'getSuggestedCities']);
 Route::get('/paiements/par-mois', [RevenuLivreurController::class, 'filterPaiementsParMois'])->name('paiements.par.mois');
 
 Route::get('/test-sms', [SmsController::class, 'envoyerSms']);
+
+// jetons
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/token-prices', [TokenPriceController::class, 'index'])->name('token-prices.index');
+        Route::get('/token-prices/{id}/edit', [TokenPriceController::class, 'edit'])->name('token-prices.edit');
+        Route::put('/token-prices/{id}', [TokenPriceController::class, 'update'])->name('token-prices.update');
+    });
+
+    // Achat jeton
+Route::get('/tokens', [TokenController::class, 'index'])->name('tokens.index');
+Route::post('/tokens/purchase', [TokenController::class, 'purchase'])->name('tokens.purchase');
+
+Route::post('/tokens/payment/ipn', [TokenController::class, 'paymentIpn'])->name('tokens.payment.ipn');
+Route::get('/tokens/payment/success', [TokenController::class, 'paymentSuccess'])->name('tokens.payment.success');
+Route::get('/tokens/payment/cancel', [TokenController::class, 'paymentCancel'])->name('tokens.payment.cancel');
+
+Route::get('/services/livraison-express', [PageController::class, 'livraisonExpress'])->name('services.livraison-express');
+Route::get('/services/livraison-programmee', [PageController::class, 'livraisonProgrammee'])->name('services.livraison-programmee');
+Route::get('/services/solutions-ecommerce', [PageController::class, 'solutionsEcommerce'])->name('services.solutions-ecommerce');
+
+// Routes pour l'entreprise
+Route::get('/apropos', [PageController::class, 'apropos'])->name('apropos');
+Route::get('/carrieres', [PageController::class, 'carrieres'])->name('carrieres');
+Route::get('/blog', [PageController::class, 'blog'])->name('blog');
+
+// Routes pour les pages légales
+Route::get('/legal/conditions', [PageController::class, 'conditions'])->name('legal.conditions');
+Route::get('/legal/confidentialite', [PageController::class, 'confidentialite'])->name('legal.confidentialite');
+Route::get('/legal/mentions', [PageController::class, 'mentions'])->name('legal.mentions');
+Route::get('/legal/cookies', [PageController::class, 'cookies'])->name('legal.cookies');
+Route::get('/sitemap', [PageController::class, 'sitemap'])->name('sitemap');
 
 
 // Auth routes

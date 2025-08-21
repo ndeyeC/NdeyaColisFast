@@ -38,6 +38,10 @@ public static function statutsAcceptables(): array
         self::STATUT_CONFIRMEE,
     ];
 }
+public function getProblemeDecodeAttribute()
+{
+    return $this->probleme_signale ?? [];
+}
 
 public static function statutsEnCours(): array
 {
@@ -59,7 +63,6 @@ public static function statutsDuLivreur(): array
  protected $casts = [
      'probleme_signale' => 'array' // Conversion automatique
  ];
-//  const STATUT_PROBLEME_SIGNALE = 'probleme_signale';
 
     protected $fillable = [
         'quantite',      
@@ -105,7 +108,6 @@ public static function statutsDuLivreur(): array
     ];
     public function user()
     {
-        // return $this->belongsTo(User::class, 'user_id');
     return $this->belongsTo(User::class, 'user_id', 'user_id');
 
     }
@@ -113,7 +115,6 @@ public static function statutsDuLivreur(): array
 
     public function driver()
 {
-    // return $this->belongsTo(User::class, 'driver_id');
     return $this->belongsTo(User::class, 'driver_id', 'user_id');
 
 }
@@ -133,11 +134,12 @@ public function deliveryRoute()
         return $this->hasMany(DetailLivraison::class, 'id_commande');
     }
 
-    public function evaluation()
+     public function evaluation()
     {
-        return $this->hasOne(Evaluation::class, 'id_commande');
+        return $this->hasOne(Evaluation::class, 'commande_id', 'id');
     }
 
+   
     public function trajet()
 {
     return $this->belongsTo(TrajetUrbain::class, 'trajet_id');

@@ -89,7 +89,6 @@
                                     <tr>
                                         <td>CMD-{{ $paiement->id }}</td>
                                         <td>{{ $paiement->updated_at->format('d/m/Y') }}</td>
-                                        <td>Livraison #{{ $paiement->id }}</td>
                                         <td class="text-success fw-bold">
                                             +{{ number_format($paiement->prix_final, 0) }} FCFA
                                         </td>
@@ -119,45 +118,11 @@
 
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
 
-    // ✅ Charger les données dynamiquement
-    fetch("{{ route('livreur.api.revenus.graph', auth()->id()) }}")
-        .then(response => response.json())
-        .then(data => {
-            // ✅ Graphique revenus journaliers
-            new Chart(document.getElementById('revenusChart'), {
-                type: 'line',
-                data: {
-                    labels: data.dates,
-                    datasets: [{
-                        label: "Revenus journaliers",
-                        data: data.revenus_journaliers,
-                        borderColor: "#4e73df",
-                        backgroundColor: "rgba(78, 115, 223, 0.1)",
-                        fill: true,
-                        tension: 0.3
-                    }]
-                },
-                options: { responsive: true, plugins: { legend: { display: false } } }
-            });
+    <script>
+    const revenusGraphUrl = "{{ route('livreur.api.revenus.graph', auth()->id()) }}";
+    </script>
+       <script src="{{ asset('js/revenus.js') }}"></script>
 
-            // ✅ Graphique répartition des types de livraisons
-            new Chart(document.getElementById('typesChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(data.repartition_types),
-                    datasets: [{
-                        data: Object.values(data.repartition_types),
-                        backgroundColor: ["#4e73df", "#1cc88a", "#36b9cc"]
-                    }]
-                },
-                options: { responsive: true }
-            });
-        })
-        .catch(() => console.error("Erreur lors du chargement des données du graphique"));
 
-});
-</script>
 @endsection

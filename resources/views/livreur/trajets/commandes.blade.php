@@ -10,7 +10,7 @@
 
     @if($commandes->isEmpty())
         <div class="p-5 bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-xl text-center font-medium shadow-sm">
-            ❌ Aucune commande assignée à ce trajet.
+             Aucune commande assignée à ce trajet.
         </div>
     @else
         <ul class="divide-y divide-gray-200">
@@ -24,7 +24,7 @@
                         </div>
                         <div>
                             <span class="inline-block px-3 py-1 bg-blue-600 text-white text-sm rounded-lg">
-                                📦 #{{ $commande->id }}
+                                 #{{ $commande->id }}
                             </span>
                         </div>
                     </div>

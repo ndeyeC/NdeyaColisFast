@@ -12,40 +12,10 @@
         <div class="flex items-center space-x-4">
             <!-- Notifications -->
             <div class="relative" x-data="{ open: false }">
-                <button @click="open = !open" class="text-gray-500 hover:text-gray-700 focus:outline-none">
-                    <i class="fas fa-bell text-xl"></i>
-                    <span class="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">3</span>
-                </button>
-                
-                <!-- Notification Panel -->
-                <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg py-1 z-50" style="display: none;">
-                    <div class="px-4 py-2 border-b border-gray-100">
-                        <p class="text-sm font-medium text-gray-700">Notifications</p>
-                    </div>
-                    
-                    <a href="#" class="block px-4 py-2 hover:bg-gray-100">
-                        <p class="text-sm font-medium text-gray-900">Nouvelle livraison disponible</p>
-                        <p class="text-xs text-gray-500">Il y a 5 minutes</p>
-                    </a>
-                    
-                    <a href="#" class="block px-4 py-2 hover:bg-gray-100">
-                        <p class="text-sm font-medium text-gray-900">Félicitations! Vous avez reçu un pourboire</p>
-                        <p class="text-xs text-gray-500">Il y a 1 heure</p>
-                    </a>
-                    
-                    <a href="#" class="block px-4 py-2 hover:bg-gray-100">
-                        <p class="text-sm font-medium text-gray-900">Mise à jour de l'application</p>
-                        <p class="text-xs text-gray-500">Il y a 1 jour</p>
-                    </a>
-                    
-                    <div class="px-4 py-2 border-t border-gray-100">
-                        <a href="#" class="text-sm text-green-600 hover:text-green-700">Voir toutes les notifications</a>
-                    </div>
-                </div>
             </div>
             
            <!-- User Profile Dropdown -->
-<div class="relative" x-data="{ open: false }">
+       <div class="relative" x-data="{ open: false }">
     <button @click="open = !open" class="flex items-center space-x-2 focus:outline-none">
         <img src="{{ asset('images/avatar-placeholder.png') }}" alt="Profil" class="w-8 h-8 rounded-full border border-gray-300">
         <span class="hidden md:block text-sm font-medium text-gray-700">{{ Auth::user()->name }}</span>

@@ -29,7 +29,6 @@ class TarifController extends Controller
     {
         $validated = $request->validate([
             'zone' => 'required|string|max:100',
-            // 'type_zone' => 'required|string|max:100',
             'type_zone' => 'required|in:intra_urbaine,region_proche,region_eloignee,extra_urbaine', // ← Nouveau
             'type_livraison' => 'required|string|max:50',
             'tranche_distance' => 'required|string',
@@ -77,27 +76,5 @@ class TarifController extends Controller
         return redirect()->route('admin.tarifs.index')
                          ->with('success', 'Tarif supprimé avec succès');
     }
-
-//     public function getPrice(Request $request)
-// {
-//     $zone = \App\Models\Zone::where('region_depart', $request->depart)
-//                             ->where('region_arrivee', $request->destination)
-//                             ->first();
-
-//     if (!$zone) {
-//         return response()->json(['error' => 'Zone non trouvée.']);
-//     }
-
-//     $tarif = \App\Models\Tarif::where('type_zone', $zone->type_zone)
-//                               ->where('type_livraison', $request->livraison)
-//                               ->where('tranche_poids', $request->poids)
-//                               ->first();
-
-//     if (!$tarif) {
-//         return response()->json(['error' => 'Tarif non disponible pour cette configuration.']);
-//     }
-
-//     return response()->json(['prix' => $tarif->prix]);
-// }
 
 }

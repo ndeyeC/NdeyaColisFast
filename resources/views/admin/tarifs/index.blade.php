@@ -69,7 +69,7 @@
                         <td>{{ ucfirst(str_replace('_', ' ', $tarif->type_zone)) }}</td>
                         <td>{{ $tarif->tranche_distance }}</td>
                         <td>{{ $tarif->tranche_poids }}</td>
-                        <td>{{ number_format($tarif->prix, 0, ',', ' ') }}</td>
+                        <td>{{ number_format($tarif->prix, 0, '', ' ') }}</td>
                         <td>
                             <a href="{{ route('admin.tarifs.edit', $tarif->id) }}" 
                                class="btn btn-sm btn-outline-danger" title="Modifier">
@@ -104,61 +104,12 @@
 @endsection
 
 @section('scripts')
-<script>
-$(document).ready(function() {
-    // Filtrage en temps réel
-    $('#searchInput, #zoneFilter, #typeFilter, #zoneTypeFilter').on('keyup change', function() {
-        const search = $('#searchInput').val().toLowerCase();
-        const zone = $('#zoneFilter').val();
-        const type = $('#typeFilter').val();
-        const typeZone = $('#zoneTypeFilter').val();
 
-        $('.tarif-row').each(function() {
-            const rowZone = $(this).data('zone');
-            const rowType = $(this).data('type');
-            const rowTypeZone = $(this).data('typezone');
-            const rowText = $(this).text().toLowerCase();
+    <script src="{{ asset('js/tarif.js') }}"></script>
 
-            const zoneMatch = zone === '' || rowZone === zone;
-            const typeMatch = type === '' || rowType === type;
-            const typeZoneMatch = typeZone === '' || rowTypeZone === typeZone;
-            const searchMatch = rowText.includes(search);
-
-            $(this).toggle(zoneMatch && typeMatch && typeZoneMatch && searchMatch);
-        });
-    });
-
-    // Réinitialisation des filtres
-    $('#resetFilters').click(function() {
-        $('#searchInput').val('');
-        $('#zoneFilter').val('');
-        $('#typeFilter').val('');
-        $('#zoneTypeFilter').val('');
-        $('.tarif-row').show();
-    });
-});
-</script>
 @endsection
 
 @section('styles')
-<style>
-    .tarif-row:hover {
-        background-color: #ffe5e5; /* rouge très clair */
-        transition: background-color 0.2s ease;
-    }
-    .table-responsive {
-        min-height: 300px;
-    }
-    .pagination .page-item.active .page-link {
-        background-color: #dc3545; /* Bootstrap danger */
-        border-color: #dc3545;
-    }
-    .form-control:focus, .form-select:focus {
-        border-color: #dc3545;
-        box-shadow: 0 0 0 0.25rem rgba(220,53,69,.25);
-    }
-    .fw-bold {
-        font-weight: 700 !important;
-    }
-</style>
+<link rel="stylesheet" href="{{ asset('css/tarif.css') }}">
+
 @endsection

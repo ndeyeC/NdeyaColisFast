@@ -21,6 +21,8 @@
             <span>Livraisons disponibles</span>
         </a>
 
+        
+
         <!-- Livraisons en cours -->
         <a href="{{ route('livreur.livraison-cours') }}"
            class="flex items-center px-4 py-3 rounded-lg text-white hover:bg-rose-600 transition-colors {{ request()->routeIs('livraison-cours') ? 'bg-rose-600' : '' }}">

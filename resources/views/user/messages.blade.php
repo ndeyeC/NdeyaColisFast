@@ -3,6 +3,10 @@
 @section('content')
 <div class="container py-4">
     <!-- ✅ Titre -->
+     <a href="{{ url()->previous() }}" class="btn btn-outline-secondary mb-3">
+    <i class="fas fa-arrow-left me-1"></i> Retour
+    </a>
+
     <div class="text-center mb-4">
         
         <h2 class="fw-bold text-danger">

@@ -128,12 +128,15 @@
                                 Suivi des livraisons
                             </a>
                         </li>
-                        <!-- <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('admin.statistiques.*') ? 'active' : '' }}" href="{{ route('admin.statistiques.index') }}">
-                                <i class="fas fa-chart-bar me-2"></i>
-                                Statistiques
-                            </a>
-                        </li> -->
+
+                <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('admin.token-prices.index') ? 'active' : '' }}" href="{{ route('admin.token-prices.index') }}">
+               <i class="fas fa-coins me-2 text-yellow-500"></i>
+               Gestion des prix des jetons
+                </a>
+                </li>
+
+
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('admin.communications.index') ? 'active' : '' }}" href="{{ route('admin.communications.index') }}">
                                 <i class="fas fa-comments me-2"></i>

@@ -155,7 +155,7 @@
 
         if (roleSelect) {
             roleSelect.addEventListener('change', toggleFields);
-            toggleFields(); // Initialiser au chargement
+            toggleFields(); 
         }
     });
 </script>

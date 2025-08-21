@@ -165,7 +165,7 @@ class SuiviLivraisonController extends Controller
     }
 public function problemesSignales()
 {
-    $livraisons = Commnande::with(['user', 'driver']) // ✅ Correction ici
+    $livraisons = Commnande::with(['user', 'driver']) 
         ->where('status', 'probleme_signale')
         ->whereNotNull('probleme_signale')
         ->orderBy('updated_at', 'desc')
