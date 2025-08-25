@@ -77,7 +77,7 @@
                 <i class="fas fa-arrow-left"></i> Retour au Dashboard Livreurs
             </a>
         @else
-            <a href="{{ route('client.dashboard') }}" 
+            <a href="{{ route('dashboard') }}" 
                 class="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-red-600 hover:bg-red-700 text-white shadow transition">
                 <i class="fas fa-arrow-left"></i> Retour au Dashboard Client
             </a>

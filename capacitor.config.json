@@ -1,0 +1,6 @@
+{
+  "appId": "com.colisfast.app",
+  "appName": "ColisFast",
+  "webDir": "public/mobile",
+  "bundledWebRuntime": false
+}

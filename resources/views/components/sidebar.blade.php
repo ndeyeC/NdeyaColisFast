@@ -65,29 +65,3 @@
 </aside>
 
 
-<!-- Mobile Sidebar Toggle -->
-<div class="md:hidden fixed bottom-0 inset-x-0 bg-rose-600 text-white z-50">
-    <div class="flex justify-around">
-        <a href="{{ url('/livreur/dashboard') }}" class="flex flex-col items-center py-2 flex-1 {{ request()->is('livreur/dashboard') ? 'bg-rose-700' : '' }}">
-            <i class="fas fa-home text-lg"></i>
-            <span class="text-xs">Accueil</span>
-        </a>
-        <a href="{{ url('/livreur/available-deliveries') }}" class="flex flex-col items-center py-2 flex-1 {{ request()->is('livreur/available-deliveries') ? 'bg-rose-700' : '' }}">
-            <i class="fas fa-list text-lg"></i>
-            <span class="text-xs">Livraisons</span>
-        </a>
-        <a href="{{ url('/livreur/ongoing-deliveries') }}" class="flex flex-col items-center py-2 flex-1 {{ request()->is('livreur/ongoing-deliveries') ? 'bg-rose-700' : '' }}">
-            <i class="fas fa-truck text-lg"></i>
-            <span class="text-xs">En cours</span>
-        </a>
-        <a href="{{ url('/livreur/navigation') }}" class="flex flex-col items-center py-2 flex-1 {{ request()->is('livreur/navigation') ? 'bg-rose-700' : '' }}">
-            <i class="fas fa-map-marker-alt text-lg"></i>
-            <span class="text-xs">GPS</span>
-        </a>
-        <a href="{{ route('profile.edit') }}" class="flex flex-col items-center py-2 flex-1 {{ request()->is('profile/edit') ? 'bg-rose-700' : '' }}">
-    <i class="fas fa-user text-lg"></i>
-    <span class="text-xs">Profil</span>
-</a>
-
-    </div>
-</div>

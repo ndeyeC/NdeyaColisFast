@@ -80,7 +80,7 @@ class RegisteredUserController extends Controller
     // Redirection selon rôle
     switch ($user->role) {
         case 'client':
-            return redirect()->route('client.dashboard');
+            return redirect()->route('dashboard');
         case 'livreur':
             return redirect()->route('livreur.dashboarde');
         case 'admin':
