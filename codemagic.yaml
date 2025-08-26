@@ -1,0 +1,36 @@
+workflows:
+  ios-workflow:
+    name: iOS Debug Build
+    environment:
+      xcode: latest
+      node: latest
+      cocoapods: default
+    scripts:
+      - name: Install dependencies
+        script: npm install
+      - name: Sync Capacitor
+        script: npx cap sync ios
+      - name: Build iOS
+        script: |
+          cd ios/App
+          xcodebuild -scheme App -workspace App.xcworkspace -configuration Debug -sdk iphonesimulator
+    artifacts:
+      - ios/App/build/**/*.app
+      - ios/App/build/**/*.ipa
+
+  android-workflow:
+    name: Android Debug Build
+    environment:
+      java: 17
+      node: latest
+    scripts:
+      - name: Install dependencies
+        script: npm install
+      - name: Sync Capacitor
+        script: npx cap sync android
+      - name: Build Android
+        script: |
+          cd android
+          ./gradlew assembleDebug
+    artifacts:
+      - android/app/build/outputs/**/*.apk
