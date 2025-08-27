@@ -20,10 +20,7 @@
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
-           background-repeat: no-repeat;
-    /* height: 30vh; */
-
-            
+            background-repeat: no-repeat;
         }
         
         .gradient-bg {
@@ -79,6 +76,7 @@
             height: 2px;
         }
         
+        /* Mobile Menu Styles */
         .mobile-menu {
             transform: translateX(-100%);
             transition: transform 0.3s ease;
@@ -87,9 +85,32 @@
         .mobile-menu.active {
             transform: translateX(0);
         }
+
+        .mobile-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .mobile-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .hamburger {
+            transition: transform 0.3s ease;
+        }
+
+        .hamburger.active {
+            transform: rotate(90deg);
+        }
     </style>
 </head>
 <body class="bg-gray-50 overflow-x-hidden">
+    <!-- Mobile Overlay -->
+    <div id="mobile-overlay" class="mobile-overlay fixed inset-0 z-40 md:hidden"></div>
+
     <!-- Navigation -->
     <nav class="bg-white/95 backdrop-blur-md shadow-lg fixed w-full z-50 transition-all duration-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -107,40 +128,59 @@
                         <a href="#contact" class="border-transparent text-gray-600 hover:border-red-300 hover:text-red-600 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-all">Contact</a>
                     </div>
                 </div>
-                <div class="flex items-center space-x-4">
+                <div class="hidden md:flex items-center space-x-4">
                     <a href="{{ route('login') }}" class="btn-primary px-6 py-2 rounded-full shadow-lg text-sm font-semibold text-white">Connexion</a>
-                    
                 </div>
                 <div class="md:hidden flex items-center">
-                    <button type="button" id="mobile-menu-btn" class="bg-white inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-red-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-red-500 transition-colors">
+                    <button type="button" id="mobile-menu-btn" class="hamburger bg-white inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-red-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-red-500 transition-colors">
                         <i class="fas fa-bars text-xl"></i>
                     </button>
                 </div>
             </div>
         </div>
-        <!-- Mobile Menu -->
-        <div id="mobile-menu" class="mobile-menu fixed inset-y-0 left-0 w-64 bg-white shadow-2xl z-50 md:hidden">
-            <div class="flex flex-col h-full">
-                <div class="flex items-center justify-between p-4 border-b">
-                    <span class="text-2xl font-black">
-                        <span class="text-red-600">Colis</span><span class="text-red-800">Fast</span>
-                    </span>
-                    <button id="close-menu" class="p-2 rounded-md text-gray-400 hover:text-red-600 transition-colors">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <nav class="flex-1 px-4 py-6 space-y-4">
-                    <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-red-600 bg-red-50">Accueil</a>
-                    <a href="#comment-ca-marche" class="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors">Comment ça marche</a>
-                    <a href="#avantages" class="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors">Avantages</a>
-                    <a href="#contact" class="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors">Contact</a>
-                </nav>
-                <div class="p-4 border-t">
-                    <a href="{{ route('register') }}" class="block w-full btn-primary text-center py-3 rounded-lg text-white font-semibold">Commencer</a>
-                </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="mobile-menu fixed inset-y-0 left-0 w-80 bg-white shadow-2xl z-50 md:hidden">
+        <div class="flex flex-col h-full">
+            <div class="flex items-center justify-between p-4 border-b bg-red-50">
+                <span class="text-2xl font-black">
+                    <span class="text-red-600">Colis</span><span class="text-red-800">Fast</span>
+                </span>
+                <button id="close-menu" class="p-2 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-100 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <nav class="flex-1 px-4 py-6 space-y-2">
+                <a href="#" class="mobile-menu-link block px-4 py-3 rounded-lg text-base font-medium text-red-600 bg-red-50 border-l-4 border-red-600">
+                    <i class="fas fa-home mr-3"></i>
+                    Accueil
+                </a>
+                <a href="#comment-ca-marche" class="mobile-menu-link block px-4 py-3 rounded-lg text-base font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 hover:border-l-4 hover:border-red-600 transition-all">
+                    <i class="fas fa-cogs mr-3"></i>
+                    Comment ça marche
+                </a>
+                <a href="#avantages" class="mobile-menu-link block px-4 py-3 rounded-lg text-base font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 hover:border-l-4 hover:border-red-600 transition-all">
+                    <i class="fas fa-star mr-3"></i>
+                    Avantages
+                </a>
+                <a href="#contact" class="mobile-menu-link block px-4 py-3 rounded-lg text-base font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 hover:border-l-4 hover:border-red-600 transition-all">
+                    <i class="fas fa-envelope mr-3"></i>
+                    Contact
+                </a>
+            </nav>
+            <div class="p-4 border-t bg-gray-50">
+                <a href="{{ route('register') }}" class="block w-full btn-primary text-center py-3 rounded-lg text-white font-semibold mb-3">
+                    <i class="fas fa-rocket mr-2"></i>
+                    Commencer
+                </a>
+                <a href="{{ route('login') }}" class="block w-full bg-gray-200 text-center py-3 rounded-lg text-gray-700 font-semibold hover:bg-gray-300 transition-colors">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Connexion
+                </a>
             </div>
         </div>
-    </nav>
+    </div>
 
     <!-- Hero Section -->
     <div class="relative min-h-screen hero-bg overflow-hidden">
@@ -155,7 +195,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center min-h-screen">
                 <div class="text-white space-y-8">
                     <div class="space-y-4">
-                        <h1 class="text-5xl lg:text-7xl font-black leading-tight">
+                        <h1 class="text-4xl md:text-5xl lg:text-7xl font-black leading-tight">
                             La livraison
                             <span class="block text-red-200">n'a jamais été</span>
                             <span class="block">aussi simple</span>
@@ -163,13 +203,12 @@
                         <div class="w-24 h-1 bg-red-200 rounded-full"></div>
                     </div>
                     
-                    <p class="text-xl lg:text-2xl text-white leading-relaxed max-w-xl">
+                    <p class="text-lg md:text-xl lg:text-2xl text-white leading-relaxed max-w-xl">
                         Connectez-vous avec des livreurs professionnels et faites livrer vos colis rapidement, en toute sécurité et à prix abordable au Sénégal.
                     </p>
                     
                     <div class="flex flex-col sm:flex-row gap-4 pt-4">
-                      
-                        <a href="#comment-ca-marche" class="glass-effect px-8 py-4 rounded-full text-lg font-semibold text-white hover:bg-white/20 transition-all">
+                        <a href="#comment-ca-marche" class="glass-effect px-8 py-4 rounded-full text-lg font-semibold text-white hover:bg-white/20 transition-all text-center">
                             <i class="fas fa-play mr-2"></i>
                             Voir la démo
                         </a>
@@ -433,14 +472,94 @@
             <div class="mt-12 pt-8 border-t border-gray-800">
                 <div class="flex flex-col md:flex-row justify-between items-center">
                     <p class="text-gray-400 text-sm">© 2025 colisFast. Tous droits réservés.</p>
-                    
                 </div>
             </div>
         </div>
     </footer>
 
-    <!-- Scripts -->
-    <script src="{{ asset('js/main.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const closeMenuBtn = document.getElementById('close-menu');
+            const mobileOverlay = document.getElementById('mobile-overlay');
+            const hamburgerIcon = mobileMenuBtn.querySelector('i');
+            const body = document.body;
+
+            function openMenu() {
+                mobileMenu.classList.add('active');
+                mobileOverlay.classList.add('active');
+                mobileMenuBtn.classList.add('active');
+                hamburgerIcon.classList.remove('fa-bars');
+                hamburgerIcon.classList.add('fa-times');
+                body.style.overflow = 'hidden'; 
+            }
+
+            function closeMenu() {
+                mobileMenu.classList.remove('active');
+                mobileOverlay.classList.remove('active');
+                mobileMenuBtn.classList.remove('active');
+                hamburgerIcon.classList.remove('fa-times');
+                hamburgerIcon.classList.add('fa-bars');
+                body.style.overflow = ''; // Restore scroll
+            }
+
+            // Event listeners
+            mobileMenuBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (mobileMenu.classList.contains('active')) {
+                    closeMenu();
+                } else {
+                    openMenu();
+                }
+            });
+
+            closeMenuBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                closeMenu();
+            });
+
+            mobileOverlay.addEventListener('click', function() {
+                closeMenu();
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && mobileMenu.classList.contains('active')) {
+                    closeMenu();
+                }
+            });
+
+            const mobileMenuLinks = document.querySelectorAll('.mobile-menu-link');
+            mobileMenuLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    setTimeout(() => {
+                        closeMenu();
+                    }, 300);
+                });
+            });
+
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 768 && mobileMenu.classList.contains('active')) {
+                    closeMenu();
+                }
+            });
+        });
+    </script>
 
 </body>
 </html>

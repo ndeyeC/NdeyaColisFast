@@ -5,11 +5,9 @@ const config: CapacitorConfig = {
   appName: 'ColisFast',
   webDir: 'public/mobile',
   server: {
-    // Retiré androidScheme pour permettre HTTP en développement
-    url: 'http://10.0.2.2:8000', // Android emulator
+    url: 'http://192.168.1.24:8000',
     cleartext: true,
-    allowNavigation: ["*"], // Permet toute navigation
-    hostname: '10.0.2.2'
+    allowNavigation: ["*"],
   },
   plugins: {
     SplashScreen: {

@@ -1,7 +1,8 @@
 <div class="flex flex-col md:flex-row min-h-screen">
     <!-- Section de gauche avec image et infos -->
     <div class="w-full md:w-1/2 bg-red-600 flex items-center justify-center p-8 text-white relative mt-8">
-        <div class="absolute inset-0 z-0 opacity-20" style="background-image: url('{{ asset('image/colis.jpg') }}'); background-size: cover; background-position: center; width: 110%;"></div>
+        <!-- <div class="absolute inset-0 z-0 opacity-20" style="background-image: url('{{ asset('image/colis.jpg') }}'); background-size: cover; background-position: center; width: 110%;"></div> -->
+     <img src="{{ asset('image/colis.jpg') }}" class="w-full h-auto rounded-lg mb-4" alt="Colis">
 
         <div class="max-w-md z-10 relative flex flex-col items-center justify-center text-center min-h-[80vh] mx-auto">
             <p class="mb-6 text-lg"></p>
