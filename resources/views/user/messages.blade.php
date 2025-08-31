@@ -3,12 +3,11 @@
 @section('content')
 <div class="container py-4">
     <!-- ✅ Titre -->
-     <a href="{{ url()->previous() }}" class="btn btn-outline-secondary mb-3">
-    <i class="fas fa-arrow-left me-1"></i> Retour
+    <a href="{{ url()->previous() }}" class="btn btn-outline-secondary mb-3">
+        <i class="fas fa-arrow-left me-1"></i> Retour
     </a>
 
     <div class="text-center mb-4">
-        
         <h2 class="fw-bold text-danger">
             💬 Messagerie avec l'administration
         </h2>
@@ -19,6 +18,12 @@
     @if(session('success'))
         <div class="alert alert-success shadow-sm">
             {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger shadow-sm">
+            {{ session('error') }}
         </div>
     @endif
 
@@ -63,12 +68,12 @@
                 </div>
             </div>
 
-            <!-- ✅ Formulaire d’envoi -->
+            <!-- ✅ Formulaire d'envoi -->
             <div class="card shadow-sm rounded-4">
                 <div class="card-body">
                     <form id="messageForm" class="d-flex gap-2">
                         @csrf
-                        <input type="hidden" name="receiver_id" value="{{ getAdminId() }}">
+                        <input type="hidden" name="receiver_id" value="1"> <!-- ID de l'admin -->
                         <input type="hidden" name="receiver_type" value="App\Models\User">
 
                         <textarea 
@@ -91,35 +96,47 @@
     </div>
 </div>
 
-<!-- ✅ Script -->
+<!-- ✅ Script corrigé -->
 <script>
     const currentUserId = {{ auth()->id() }};
     const messagesContainer = document.getElementById("messagesContainer");
     const messageError = document.getElementById("messageError");
     const noMessagesPlaceholder = document.getElementById("noMessagesPlaceholder");
+    let isSending = false;
 
     window.onload = function() {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     };
 
-    document.getElementById('messageForm').addEventListener('submit', function(event) {
+    document.getElementById('messageForm').addEventListener('submit', async function(event) {
         event.preventDefault();
-
+        
+        if (isSending) return;
+        isSending = true;
+        
+        const submitButton = this.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.innerHTML;
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Envoi...';
+        
         const formData = new FormData(this);
-
-        fetch("{{ route('user.messages.send') }}", {
-            method: "POST",
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
+        const messageText = document.getElementById('message').value;
+        
+        try {
+            const response = await fetch("{{ route('user.messages.send') }}", {
+                method: "POST",
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+            
+            const data = await response.json();
+            
             if (data.success) {
                 if (noMessagesPlaceholder) noMessagesPlaceholder.remove();
                 
-                const messageText = document.getElementById('message').value;
                 document.getElementById('message').value = '';
                 
                 const now = new Date();
@@ -145,17 +162,20 @@
                 messageError.style.display = 'none';
             } else {
                 messageError.style.display = 'block';
-                messageError.textContent = data.message || "Une erreur est survenue.";
+                messageError.textContent = data.message || "Une erreur est survenue lors de l'envoi.";
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error("Erreur lors de l'envoi du message:", error);
             messageError.style.display = 'block';
             messageError.textContent = "Erreur réseau. Réessayez plus tard.";
-        });
+        } finally {
+            isSending = false;
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
+        }
     });
 
-    function loadNewMessages() {
+    async function loadNewMessages() {
         const messageElements = document.querySelectorAll("#messagesContainer [data-message-id]");
         let lastMessageId = 0;
         
@@ -167,16 +187,18 @@
             }
         });
         
-        fetch("{{ route('user.messages.check') }}", {
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({ last_id: lastMessageId })
-        })
-        .then(response => response.json())
-        .then(data => {
+        try {
+            const response = await fetch("{{ route('user.messages.check') }}", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ last_id: lastMessageId })
+            });
+            
+            const data = await response.json();
             const newMessages = data.communications;
             
             if (newMessages && newMessages.length > 0) {
@@ -201,7 +223,7 @@
                             <div class="p-3 rounded-3 shadow-sm ${message.sender_id === currentUserId ? 'bg-danger text-white' : 'bg-light'}" style="max-width: 70%">
                                 <strong class="d-block small mb-1">${message.sender_id === currentUserId ? 'Vous' : 'Admin'}</strong>
                                 ${message.message}
-                                <small class="d-block mt-1 text-muted">
+                                <small class="d-block mt-1 ${message.sender_id === currentUserId ? 'text-light opacity-75' : 'text-muted'}">
                                     <i class="fas fa-clock me-1"></i>${formattedDate}
                                 </small>
                             </div>
@@ -212,10 +234,9 @@
                     }
                 });
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error("Erreur lors du chargement des nouveaux messages:", error);
-        });
+        }
     }
 
     setInterval(loadNewMessages, 3000);

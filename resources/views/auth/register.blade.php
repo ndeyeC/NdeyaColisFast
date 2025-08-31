@@ -79,12 +79,12 @@
 
                 <!-- Carte d'identité (livreur uniquement) -->
                 <div class="mt-4 livreur-field hidden">
-                    <x-input-label for="id_card" :value="__('Numéro de carte d\'identité')" />
+                    <x-input-label for="id_card" :value="__('Numéro d’Identification Nationale (NIN)')" />
                     <x-text-input id="id_card" type="text" name="id_card" class="block mt-1 w-full"
                         :value="old('id_card')" />
                     <x-input-error :messages="$errors->get('id_card')" class="mt-2" />
                 </div>
-                <!-- ✅ Type de livreur (urbain ou classique) -->
+                <!--  Type de livreur (urbain ou classique) -->
 <div class="mt-4 livreur-field hidden">
     <x-input-label for="type_livreur" :value="__('Type de livreur')" />
     <select id="type_livreur" name="type_livreur" class="block mt-1 w-full">
@@ -138,25 +138,4 @@
     </div>
 </div>
 
-<!-- Script inclus directement pour affichage dynamique -->
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const roleSelect = document.getElementById('role');
-        const clientFields = document.querySelectorAll('.client-field');
-        const livreurFields = document.querySelectorAll('.livreur-field');
-
-        function toggleFields() {
-            const selectedRole = roleSelect.value;
-            const isClient = selectedRole === 'client';
-            const isLivreur = selectedRole === 'livreur';
-
-            clientFields.forEach(el => el.classList.toggle('hidden', !isClient));
-            livreurFields.forEach(el => el.classList.toggle('hidden', !isLivreur));
-        }
-
-        if (roleSelect) {
-            roleSelect.addEventListener('change', toggleFields);
-            toggleFields(); 
-        }
-    });
-</script>
+<script src="{{ asset('js/register.js') }}"></script>

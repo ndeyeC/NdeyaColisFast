@@ -131,38 +131,8 @@
 
     </nav>
 </aside>
-
-<script>
-function toggleMobileMenu() {
-    const sidebar = document.getElementById('mobile-sidebar');
-    const overlay = document.getElementById('mobile-menu-overlay');
-    const button = document.getElementById('mobile-menu-button');
-    
-    if (sidebar.classList.contains('-translate-x-full')) {
-        // Ouvrir le menu
-        sidebar.classList.remove('-translate-x-full');
-        overlay.classList.remove('hidden');
-        button.innerHTML = '<i class="fas fa-times text-xl"></i>';
-        document.body.style.overflow = 'hidden';
-    } else {
-        closeMobileMenu();
-    }
-}
-
-function closeMobileMenu() {
-    const sidebar = document.getElementById('mobile-sidebar');
-    const overlay = document.getElementById('mobile-menu-overlay');
-    const button = document.getElementById('mobile-menu-button');
-    
-    sidebar.classList.add('-translate-x-full');
-    overlay.classList.add('hidden');
-    button.innerHTML = '<i class="fas fa-bars text-xl"></i>';
-    document.body.style.overflow = '';
-}
-
-window.addEventListener('resize', function() {
-    if (window.innerWidth >= 768) { 
-        closeMobileMenu();
-    }
-});
-</script>
+<script src="{{ asset('js/mobile-menu.js') }}"></script>
+<script src="{{ asset('js/navbar-scroll.js') }}"></script>
+<script src="{{ asset('js/smooth-scroll.js') }}"></script>
+<script src="{{ asset('js/card-animation.js') }}"></script>
+<script src="{{ asset('js/counter-animation.js') }}"></script>

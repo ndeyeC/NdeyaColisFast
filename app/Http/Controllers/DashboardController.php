@@ -144,6 +144,6 @@ public function assignerLivraisons(Request $request, $trajetId)
     }
 
     return redirect()->route('admin.trajets.urbains')
-        ->with('success', '✅ Les livraisons ont été assignées à ' . $trajet->livreur->name);
+        ->with('success', ' Les livraisons ont été assignées à ' . $trajet->livreur->name);
 }
 }

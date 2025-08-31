@@ -43,7 +43,7 @@ Route::get('/dashboard', function () {
 
     return match ($user->role) {
         'admin' => redirect()->route('admin.dashboard'),
-        'livreur' => redirect()->route('livreur.dashboarde'), // attention au 'e' dans dashboarde
+        'livreur' => redirect()->route('livreur.dashboarde'), 
         'client' => redirect()->route('client.dashboard'),
         default => abort(403),
     };
@@ -119,8 +119,7 @@ Route::middleware(['auth', 'role:livreur'])->prefix('livreur')->name('livreur.')
     
     
     Route::get('/livraison-cours', [LivraisonEnCoursController::class, 'index'])->name('livraison-cours');
-   // Correct : méthode demarrerLivraison() existante
-Route::post('/livraisons/{id}/demarrer', [LivraisonEnCoursController::class, 'demarrerLivraison'])->name('livraisons.demarrer');
+   Route::post('/livraisons/{id}/demarrer', [LivraisonEnCoursController::class, 'demarrerLivraison'])->name('livraisons.demarrer');
     Route::post('/livraisons/{id}/marquer-livree', [LivraisonEnCoursController::class, 'marquerLivree'])->name('livraisons.marquer-livree');
     Route::post('/livraisons/{id}/signaler-probleme', [LivraisonEnCoursController::class, 'signalerProbleme'])->name('livraisons.signaler-probleme');
     Route::post('/livraisons/{id}/annuler', [LivraisonEnCoursController::class, 'annulerLivraison'])->name('livraisons.annuler');
@@ -135,6 +134,10 @@ Route::post('/livraisons/{id}/demarrer', [LivraisonEnCoursController::class, 'de
 
 
 });
+Route::post('/client/ajouter-livreur-favori', [App\Http\Controllers\ClientController::class, 'ajouterFavori'])
+    ->name('client.ajouter-favori')
+    ->middleware(['auth', 'role:client']);
+
 
 // Client routes protégées
 Route::middleware(['auth', 'role:client'])->prefix('client')->name('client.')->group(function () {
@@ -173,14 +176,14 @@ Route::middleware(['auth', 'role:client'])->group(function () {
     Route::get('/commnandes/payment/success', [CommnandeController::class, 'paymentSuccess'])->name('commnandes.payment.success');
     Route::get('/commnandes/payment/cancel', [CommnandeController::class, 'paymentCancel'])->name('commnandes.payment.cancel');
     Route::match(['GET', 'POST'], '/commnandes/payment/ipn', [CommnandeController::class, 'ipnCallback'])->name('commnandes.payment.ipn');
-    Route::get('/commnandes/index', [CommnandeController::class, 'index'])->name('commnandes.index');
+Route::get('/commnandes/index', [CommnandeController::class, 'historique'])->name('commnandes.index');
     Route::get('/commnandes/{commnande}', [CommnandeController::class, 'show'])->name('commnandes.show');
 });
 // Divers
 Route::get('/suggestions', [\App\Http\Controllers\SuggestionController::class, 'getSuggestedCities']);
-Route::get('/paiements/par-mois', [RevenuLivreurController::class, 'filterPaiementsParMois'])->name('paiements.par.mois');
+Route::middleware(['auth', 'role:livreur'])->get('/paiements/par-mois', [RevenuLivreurController::class, 'filterPaiementsParMois'])->name('paiements.par.mois');
 
-Route::get('/test-sms', [SmsController::class, 'envoyerSms']);
+Route::middleware(['auth', 'role:admin'])->get('/test-sms', [SmsController::class, 'envoyerSms']);
 
 // jetons
 Route::middleware(['auth', 'role:admin'])
@@ -193,8 +196,12 @@ Route::middleware(['auth', 'role:admin'])
     });
 
     // Achat jeton
-Route::get('/tokens', [TokenController::class, 'index'])->name('tokens.index');
-Route::post('/tokens/purchase', [TokenController::class, 'purchase'])->name('tokens.purchase');
+
+Route::middleware(['auth', 'role:client'])->group(function () {
+    // Gestion des tokens
+    Route::get('/tokens', [TokenController::class, 'index'])->name('tokens.index');
+    Route::post('/tokens/purchase', [TokenController::class, 'purchase'])->name('tokens.purchase');
+});
 
 Route::post('/tokens/payment/ipn', [TokenController::class, 'paymentIpn'])->name('tokens.payment.ipn');
 Route::get('/tokens/payment/success', [TokenController::class, 'paymentSuccess'])->name('tokens.payment.success');

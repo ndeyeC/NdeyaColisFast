@@ -149,25 +149,34 @@ class TokenTransaction extends Model
     }
     
     // CORRECTION: Méthodes statiques pour créer les transactions
-    public static function createPurchase($userId, $amount, $zoneId, $paymentMethod, $reference = null, $expiryDays = 365)
-    {
-        // CORRECTION: Validation du user_id
-        if (!$userId) {
-            throw new \Exception('User ID manquant pour createPurchase');
-        }
-
-        return self::create([
-            'user_id' => $userId,
-            'amount' => abs($amount), // S'assurer que c'est positif
-            'delivery_zone_id' => $zoneId,
-            'payment_method' => $paymentMethod,
-            'type' => self::TYPE_PURCHASE,
-            'status' => self::STATUS_PENDING, // CORRECTION: Commencer par pending
-            'reference' => $reference ?: 'TOKEN-' . strtoupper(\Str::random(8)),
-            'notes' => "Achat de {$amount} jeton(s) pour la zone",
-            'expiry_date' => Carbon::now()->addDays($expiryDays),
-        ]);
+   public static function createPurchase($userId, $amount, $zoneId, $paymentMethod, $reference = null, $expiryDays = 365)
+{
+    if (!$userId) {
+        throw new \Exception('User ID manquant pour createPurchase');
     }
+
+    $transaction = self::create([
+        'user_id' => $userId,
+        'amount' => abs($amount),
+        'delivery_zone_id' => $zoneId,
+        'payment_method' => $paymentMethod,
+        'type' => self::TYPE_PURCHASE,
+        'status' => self::STATUS_PENDING, // Commencer par pending
+        'reference' => $reference ?: 'TOKEN-' . strtoupper(\Str::random(8)),
+        'notes' => "Achat de {$amount} jeton(s) pour la zone",
+        'expiry_date' => Carbon::now()->addDays($expiryDays),
+    ]);
+
+    Log::info('Transaction d\'achat créée', [
+        'transaction_id' => $transaction->id,
+        'user_id' => $userId,
+        'amount' => $amount,
+        'status' => 'pending'
+    ]);
+
+    return $transaction;
+}
+
     
     public static function createUsage($userId, $amount, $zoneId, $commandeId, $reference = null)
     {

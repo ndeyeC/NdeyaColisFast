@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  class Commnande extends Model
  {
     use SoftDeletes;
+    protected $table = 'commnandes';
 
     const STATUT_EN_ATTENTE = 'en_attente_paiement';
     const STATUT_PAYEE = 'payee';
@@ -61,7 +62,7 @@ public static function statutsDuLivreur(): array
 }
     
  protected $casts = [
-     'probleme_signale' => 'array' // Conversion automatique
+     'probleme_signale' => 'array' 
  ];
 
     protected $fillable = [

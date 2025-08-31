@@ -11,14 +11,14 @@
         <div class="col-md-3">
             <div class="card shadow-sm p-3">
                 <h6 class="text-muted">Revenus du mois</h6>
-                <h3 class="text-primary fw-bold">{{ number_format($revenuMois, 0) }} FCFA</h3>
+                  <h3 class="text-primary fw-bold">{{ $revenuMois }} FCFA</h3>
                 <i class="fas fa-calendar fa-2x text-primary"></i>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card shadow-sm p-3">
                 <h6 class="text-muted">Revenus totaux</h6>
-                <h3 class="text-success fw-bold">{{ number_format($revenuTotal, 0) }} FCFA</h3>
+                 <h3 class="text-success fw-bold">{{ $revenuTotal }} FCFA</h3>
                 <i class="fas fa-wallet fa-2x text-success"></i>
             </div>
         </div>
@@ -32,7 +32,7 @@
         <div class="col-md-3">
             <div class="card shadow-sm p-3">
                 <h6 class="text-muted">Moyenne par livraison</h6>
-                <h3 class="text-warning fw-bold">{{ number_format($moyenne, 0) }} FCFA</h3>
+                 <h3 class="text-warning fw-bold">{{ $moyenne }} FCFA</h3>
                 <i class="fas fa-chart-line fa-2x text-warning"></i>
             </div>
         </div>
@@ -90,10 +90,10 @@
                                         <td>CMD-{{ $paiement->id }}</td>
                                         <td>{{ $paiement->updated_at->format('d/m/Y') }}</td>
                                         <td class="text-success fw-bold">
-                                            +{{ number_format($paiement->prix_final, 0) }} FCFA
+                                             +{{ intval($paiement->prix_final) }} FCFA
                                         </td>
                                         <td>
-                                            @if($paiement->statut_paiement_livreur === 'payé')
+                                            @if($paiement->statut_paiement_livreur === 'Payée')
                                                 <span class="badge bg-success">Payé</span>
                                             @else
                                                 <span class="badge bg-warning">En attente</span>

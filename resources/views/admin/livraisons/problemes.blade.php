@@ -14,7 +14,7 @@
 </div>
 
 <div class="row mb-4">
-    <div class="col-md-4">
+    <div class="col-md-6">
         <div class="card bg-warning text-white">
             <div class="card-body text-center">
                 <h3>{{ $livraisons->where('probleme_decode.status', 'en_attente')->count() }}</h3>
@@ -22,17 +22,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card bg-success text-white">
-            <div class="card-body text-center">
-                <h3>{{ $livraisons->filter(fn($l) => ($l->probleme_decode['status'] ?? null) === 'traite')->count() }}</h3>
-
-                <!-- <h3>{{ $livraisons->where('probleme_decode.status', 'traite')->count() }}</h3> -->
-                <p class="mb-0">Problèmes traités</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
+    <div class="col-md-6">
         <div class="card bg-info text-white">
             <div class="card-body text-center">
                 <h3>{{ $livraisons->total() }}</h3>
@@ -41,6 +31,7 @@
         </div>
     </div>
 </div>
+
 
 <div class="card">
     <div class="card-header">
@@ -55,11 +46,7 @@
                     En attente ({{ $livraisons->where('probleme_decode.status', 'en_attente')->count() }})
                 </button>
             </li>
-            <li class="nav-item">
-                <button class="nav-link" data-filter="traite">
-                    Traités ({{ $livraisons->where('probleme_decode.status', 'traite')->count() }})
-                </button>
-            </li>
+           
         </ul>
     </div>
     <div class="card-body">

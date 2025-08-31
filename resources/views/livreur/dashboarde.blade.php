@@ -4,7 +4,8 @@
 @section('page-title', 'Tableau de bord')
 
 @section('content')
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
 
     <!-- Revenus aujourd'hui -->
     <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-red-500">
@@ -69,21 +70,7 @@
         </div>
     </div>
 
-    <!-- Distance parcourue -->
-    <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-red-500">
-        <div class="flex items-center">
-            <div class="p-3 rounded-full bg-red-100 mr-4">
-                <i class="fas fa-route text-red-500 text-xl"></i>
-            </div>
-            <div>
-                <p class="text-sm text-gray-500">Distance parcourue</p>
-                <p class="text-xl font-bold text-gray-700">{{ $statistiques['distance_jour'] ?? 0 }} km</p>
-                <p class="text-xs text-gray-500">aujourd'hui</p>
-            </div>
-        </div>
-    </div>
 </div>
-
 
 <!-- Livraison en cours -->
 @if($livraisonActuelle)
@@ -103,8 +90,6 @@
                     <span class="flex items-center">
                         <i class="fas fa-map-marker-alt mr-1 text-red-500"></i> {{ $livraisonActuelle->adresse_depart }}
                     </span>
-                    <span class="hidden sm:inline mx-2">•</span>
-                    <span>15 min</span>
                 </div>
                 <div class="mt-2">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
@@ -114,7 +99,6 @@
             </div>
 
             <div class="flex space-x-2">
-                <!-- ✅ Route corrigée ici -->
                 <a href="{{ route('livreur.livraison-cours') }}" 
                    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-sm flex items-center">
                     <i class="fas fa-truck-moving mr-2"></i>
@@ -164,7 +148,7 @@
                                 {{ $livraison->type_colis }}
                             </span>
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                {{ number_format($livraison->prix_final) }} FCFA
+                             {{ number_format($livraison->prix_final, 0, '.', '') }} FCFA
                             </span>
                         </div>
                     </div>

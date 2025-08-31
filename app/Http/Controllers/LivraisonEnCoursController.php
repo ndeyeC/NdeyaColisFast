@@ -114,7 +114,6 @@ public function demarrerLivraison(Request $request, $commandeId)
                 ], 400);
             }
 
-            // Vérifier si les coordonnées sont toujours identiques
             if ($coordsDepart['lat'] == $coordsArrivee['lat'] && $coordsDepart['lon'] == $coordsArrivee['lon']) {
                 Log::warning("Coordonnées identiques après géocodage pour la commande ID: {$commandeId}", [
                     'adresse_depart' => $commande->adresse_depart,
@@ -256,59 +255,150 @@ public function demarrerLivraison(Request $request, $commandeId)
         return response()->json(['success' => true, 'message' => 'Position mise à jour.']);
     }
 
-    public function marquerLivree(Request $request, $commandeId)
-    {
-        $request->validate([
+
+public function marquerLivree(Request $request, $commandeId)
+{
+    try {
+        // Valider les données d'entrée
+        $validated = $request->validate([
             'commentaire_livraison' => 'nullable|string|max:500',
-            // 'photo_livraison' => 'sometimes|image|max:2048',
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric'
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'photo_livraison' => 'nullable|image|max:2048'
         ]);
 
+        // Vérifier l'existence de la commande
         $commande = Commnande::where('id', $commandeId)
             ->where('driver_id', Auth::id())
-            ->where('status', 'en_cours')
-            ->firstOrFail();
+            ->where('status', Commnande::STATUT_EN_COURS)
+            ->first();
 
-        if (!$request->has('latitude') || !$request->has('longitude')) {
+        if (!$commande) {
+            Log::warning("Commande non trouvée ou non accessible", [
+                'commande_id' => $commandeId,
+                'driver_id' => Auth::id(),
+                'status' => Commnande::STATUT_EN_COURS
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Position requise pour marquer la livraison'
-            ], 400);
+                'message' => 'Commande non trouvée ou non accessible.'
+            ], 404);
         }
 
+        // Vérifier les permissions du dossier de stockage
+        $storagePath = storage_path('app/public/livraisons/' . date('Y/m'));
+        if (!file_exists(dirname($storagePath))) {
+            mkdir(dirname($storagePath), 0755, true);
+        }
+        if (!is_writable(dirname($storagePath))) {
+            Log::error("Dossier de stockage non accessible", [
+                'path' => $storagePath
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de configuration du serveur pour l\'upload.'
+            ], 500);
+        }
+
+        // Gérer l'upload de la photo
         $photoPath = null;
-        if ($request->hasFile('photo_livraison')) {
-            $photoPath = $request->file('photo_livraison')->store('livraisons/' . date('Y/m'), 'public');
+        if ($request->hasFile('photo_livraison') && $request->file('photo_livraison')->isValid()) {
+            try {
+                $photoPath = $request->file('photo_livraison')->store('livraisons/' . date('Y/m'), 'public');
+            } catch (\Exception $e) {
+                Log::error("Erreur lors de l'upload de la photo", [
+                    'commande_id' => $commandeId,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur lors de l\'upload de la photo.'
+                ], 500);
+            }
         }
 
-        $commande->update([
-            'status' => 'livree',
-            'date_livraison' => now(),
-            'commentaire_livraison' => $request->commentaire,
-            'photo_livraison' => $photoPath,
-            'lat_livraison' => $request->latitude,
-            'lng_livraison' => $request->longitude
-        ]);
-
-        DeliveryRoute::where('commande_id', $commandeId)
-            ->update([
-                'completed_at' => now(),
-                'final_position' => json_encode(['lat' => $request->latitude, 'lng' => $request->longitude])
+        // Mettre à jour la commande dans une transaction
+        \DB::beginTransaction();
+        try {
+            $commande->update([
+                'status' => Commnande::STATUT_LIVREE,
+                'date_livraison' => now(),
+                'commentaire_livraison' => $validated['commentaire_livraison'],
+                'photo_livraison' => $photoPath,
+                'lat_livraison' => (float) $validated['latitude'],
+                'lng_livraison' => (float) $validated['longitude']
             ]);
 
-        Log::info("Livraison terminée", [
+            // Mettre à jour la route de livraison
+            $deliveryRoute = DeliveryRoute::where('commande_id', $commandeId)->first();
+            if ($deliveryRoute) {
+                $deliveryRoute->update([
+                    'completed_at' => now(),
+                    'final_position' => json_encode([
+                        'lat' => (float) $validated['latitude'],
+                        'lng' => (float) $validated['longitude']
+                    ])
+                ]);
+            } else {
+                Log::warning("Aucune DeliveryRoute trouvée pour la commande ID: {$commandeId}");
+            }
+
+            \DB::commit();
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            Log::error("Erreur lors de la mise à jour de la commande ou DeliveryRoute", [
+                'commande_id' => $commandeId,
+                'data' => $validated,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour de la commande.',
+                'technical' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+
+        Log::info("Livraison marquée comme livrée", [
             'commande_id' => $commandeId,
             'driver_id' => Auth::id(),
-            'completed_at' => now()
+            'photo_path' => $photoPath,
+            'latitude' => $validated['latitude'],
+            'longitude' => $validated['longitude']
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Livraison marquée comme livrée avec succès!',
             'commande' => $this->formatLivraisonData($commande)
+        ], 200);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        Log::warning("Erreur de validation dans marquerLivree", [
+            'commande_id' => $commandeId,
+            'errors' => $e->errors()
         ]);
+        return response()->json([
+            'success' => false,
+            'message' => 'Données invalides.',
+            'errors' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error("Erreur serveur dans marquerLivree", [
+            'commande_id' => $commandeId,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        return response()->json([
+            'success' => false,
+            'message' => 'Une erreur serveur est survenue.',
+            'technical' => config('app.debug') ? $e->getMessage() : null
+        ], 500);
     }
+}
+
+
 
     public function signalerProbleme(Request $request, $commandeId)
     {
@@ -376,31 +466,74 @@ public function demarrerLivraison(Request $request, $commandeId)
         }
     }
 
-    public function annulerLivraison(Request $request, $commandeId)
-    {
-        $request->validate([
+
+public function annulerLivraison(Request $request, $commandeId)
+{
+    try {
+        // Valider les données d'entrée
+        $validated = $request->validate([
             'raison' => 'required|string|max:500'
         ]);
 
+        // Vérifier l'existence et l'accès à la commande
         $commande = Commnande::where('id', $commandeId)
             ->where('driver_id', Auth::id())
-            ->whereIn('status', ['acceptee', 'en_cours'])
-            ->firstOrFail();
+            ->whereIn('status', ['acceptee', 'en_c "“rs'])
+            ->first();
 
+        if (!$commande) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Commande non trouvée ou non accessible.'
+            ], 404);
+        }
+
+        // Mettre à jour la commande
         $commande->update([
             'driver_id' => null,
-            'status' => 'payee', 
-            'raison_annulation' => $request->raison,
+            'status' => Commnande::STATUT_ANNULEE,
+            'raison_annulation' => $validated['raison'],
             'date_annulation' => now()
         ]);
 
-        DeliveryRoute::where('commande_id', $commandeId)->delete();
+        // Supprimer la route de livraison associée
+        $deleted = DeliveryRoute::where('commande_id', $commandeId)->delete();
+
+        Log::info("Livraison annulée", [
+            'commande_id' => $commandeId,
+            'driver_id' => Auth::id(),
+            'raison' => $validated['raison'],
+            'delivery_route_deleted' => $deleted
+        ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Livraison annulée. Elle est maintenant disponible pour d\'autres livreurs.'
+            'message' => 'Livraison annulée avec succès. Elle est maintenant disponible pour d\'autres livreurs.'
+        ], 200);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        Log::warning("Erreur de validation dans annulerLivraison", [
+            'commande_id' => $commandeId,
+            'errors' => $e->errors()
         ]);
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation échouée.',
+            'errors' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error("Erreur serveur dans annulerLivraison", [
+            'commande_id' => $commandeId,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        return response()->json([
+            'success' => false,
+            'message' => 'Une erreur serveur est survenue.',
+            'technical' => config('app.debug') ? $e->getMessage() : null
+        ], 500);
     }
+}
 
   public function ouvrirNavigation($commandeId)
 {

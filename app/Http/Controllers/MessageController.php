@@ -18,7 +18,6 @@ class MessageController extends Controller
         
         $communications = Communication::userConversations(Auth::id())->get();
        
-        
         return view('user.messages', [
             'communications' => $communications
         ]);
@@ -30,29 +29,43 @@ class MessageController extends Controller
             'message' => 'required|string|max:500'
         ]);
         
-        $adminId = 1; 
+        $adminId = 1; // Assurez-vous que cet ID correspond à un admin existant
         
-        $communication = Communication::create([
-            'sender_id' => Auth::id(),
-            'sender_type' => 'App\Models\User',
-            'receiver_id' => $adminId,
-            'receiver_type' => 'App\Models\User',
-            'message' => $validated['message'],
-            'is_read' => false
-        ]);
-        
-        Notification::create([
-            'user_id' => $adminId,
-            'type' => 'new_message',
-            'message' => 'Nouveau message de ' . Auth::user()->name,
-            'is_read' => false
-        ]);
-        
-        if ($request->wantsJson()) {
-            return response()->json(['success' => true]);
+        try {
+            $communication = Communication::create([
+                'sender_id' => Auth::id(),
+                'sender_type' => 'App\Models\User',
+                'receiver_id' => $adminId,
+                'receiver_type' => 'App\Models\User',
+                'message' => $validated['message'],
+                'is_read' => false
+            ]);
+            
+            Notification::create([
+                'user_id' => $adminId,
+                'type' => 'new_message',
+                'message' => 'Nouveau message de ' . Auth::user()->name,
+                'is_read' => false
+            ]);
+            
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true, 
+                    'communication' => $communication
+                ]);
+            }
+            
+            return redirect()->route('user.messages')->with('success', 'Message envoyé!');
+        } catch (\Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Erreur lors de l\'envoi du message'
+                ], 500);
+            }
+            
+            return back()->with('error', 'Erreur lors de l\'envoi du message');
         }
-        
-        return redirect()->route('user.messages')->with('success', 'Message envoyé!');
     }
 
     public function checkNewMessages(Request $request)
@@ -63,11 +76,10 @@ class MessageController extends Controller
         
         $communications = Communication::newMessagesForUser(
             Auth::id(),
-           'App\Models\User',
-          $validated['last_id']
-);
+            'App\Models\User',
+            $validated['last_id']
+        );
 
-        
         foreach ($communications as $comm) {
             if ($comm->receiver_id === Auth::id() && !$comm->is_read) {
                 $comm->is_read = true;

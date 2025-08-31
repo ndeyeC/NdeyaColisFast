@@ -217,7 +217,7 @@ public function store(Request $request)
                 return redirect()->route('commnandes.show', $commande->id)
                     ->with('success', "Commande créée avec succès ! 1 jeton utilisé pour votre livraison à Dakar.");
             } else {
-                throw new \Exception("Vous n'avez que $validTokens jeton(s) disponible(s) pour Dakar. Il vous en faut $tokensToDebit.");
+       throw new \Exception("Vous n'avez que $validTokens jeton(s) disponible(s) pour Dakar (certains peuvent être expirés), il vous en faut $tokensToDebit.");
             }
         }
 
@@ -668,13 +668,12 @@ public function index()
 
     // ✅ CORRECTION MAJEURE : Récupérer les livraisons avec les bonnes relations
     $livraisonsTerminees = Commnande::where('user_id', Auth::id())
-        ->where('status', 'livree') // ⚠️ Assurez-vous d'avoir des commandes avec ce statut
-        ->whereNotNull('driver_id') // S'assurer qu'un livreur est assigné
-        ->with(['driver', 'evaluation']) // Charger les relations
+        ->where('status', 'livree') 
+        ->whereNotNull('driver_id') 
+        ->with(['driver', 'evaluation']) 
         ->orderBy('updated_at', 'desc')
         ->get();
 
-    // ✅ DEBUG : Ajout pour diagnostiquer
     \Log::info('Livraisons terminées récupérées:', [
         'count' => $livraisonsTerminees->count(),
         'commandes' => $livraisonsTerminees->pluck('id', 'status')->toArray()
@@ -691,6 +690,16 @@ public function index()
 
         return view('commnandes.show', compact('commnande'));
     }
+
+
+    public function historique()
+{
+    $commnandes = Commnande::where('user_id', Auth::id())
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+
+    return view('commnandes.index', compact('commnandes'));
+}
 
     public function confirmation($id)
     {
@@ -715,7 +724,7 @@ public function index()
 
         return response()->json([
             'success' => true,
-            'message' => 'Commande confirmée avec succès ✅'
+            'message' => 'Commande confirmée avec succès '
         ]);
     }
 

@@ -13,6 +13,7 @@ use Kreait\Firebase\Messaging\Notification;
 use App\Models\TrajetUrbain;
 use App\Models\Evaluation;
 use Twilio\Rest\Client;
+use Illuminate\Support\Facades\Log;
 
 
 class LivreurController extends Controller
@@ -228,74 +229,174 @@ class LivreurController extends Controller
 
 public function accepterCommande(Request $request, $commandeId)
 {
-    $commande = Commnande::findOrFail($commandeId);
-    $user = Auth::user();
-
-    if ($commande->driver_id !== null) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Cette commande a déjà été acceptée par un autre livreur.'
-        ], 400);
-    }
-
-    if (!in_array($commande->status, Commnande::statutsAcceptables())) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Cette commande n\'est pas disponible.'
-        ], 400);
-    }
-
-    if ($user->role !== 'livreur' && $user->role !== 'classique' && $user->role !== 'urbain') {
-        return response()->json([
-            'success' => false,
-            'message' => 'Vous n\'êtes pas autorisé à accepter des commandes.'
-        ], 403);
-    }
-
-    // Vérification spéciale pour les livreurs selon leur type
-    if ($user->role === 'classique' || ($user->role === 'livreur' && isset($user->type_livreur) && $user->type_livreur === 'classique')) {
-        $isDakar = stripos($commande->region_arrivee, 'Dakar') !== false || 
-                  stripos($commande->adresse_arrivee, 'Dakar') !== false;
-        
-        if (!$isDakar) {
+    try {
+        // Vérifier l'authentification
+        if (!Auth::check()) {
             return response()->json([
                 'success' => false,
-                'message' => 'En tant que livreur classique, vous ne pouvez accepter que des livraisons vers Dakar.'
-            ], 403);
+                'message' => 'Utilisateur non authentifié.'
+            ], 401);
         }
-    }
-    // Vérification pour les livreurs urbains (ne peuvent pas accepter les livraisons vers Dakar)
-    elseif ($user->role === 'urbain' || ($user->role === 'livreur' && isset($user->type_livreur) && $user->type_livreur === 'urbain')) {
-        $isDakar = stripos($commande->region_arrivee, 'Dakar') !== false || 
-                  stripos($commande->adresse_arrivee, 'Dakar') !== false;
+
+        $user = Auth::user();
+
+        // Log pour debug
+        \Log::info('Tentative acceptation commande', [
+            'commande_id' => $commandeId,
+            'user_id' => $user->user_id,
+            'user_role' => $user->role
+        ]);
+
+        // Rechercher la commande
+        $commande = Commnande::find($commandeId);
         
-        if ($isDakar) {
+        if (!$commande) {
             return response()->json([
                 'success' => false,
-                'message' => 'En tant que livreur urbain, vous ne pouvez pas accepter des livraisons vers Dakar.'
+                'message' => 'Commande introuvable.'
+            ], 404);
+        }
+
+        // Vérifier que la commande n'est pas déjà acceptée
+        if ($commande->driver_id !== null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cette commande a déjà été acceptée par un autre livreur.'
+            ], 400);
+        }
+
+        // Vérifier le statut de la commande
+        if (!in_array($commande->status, Commnande::statutsAcceptables())) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cette commande n\'est pas disponible. Statut: ' . $commande->status
+            ], 400);
+        }
+
+        // Vérifier le rôle de l'utilisateur
+        if (!in_array($user->role, ['livreur', 'classique', 'urbain'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vous n\'êtes pas autorisé à accepter des commandes. Rôle: ' . $user->role
             ], 403);
         }
+
+        // Vérification des restrictions géographiques
+        $regionArrivee = $commande->region_arrivee ?? '';
+        $adresseArrivee = $commande->adresse_arrivee ?? '';
+        
+        $isDakar = stripos($regionArrivee, 'Dakar') !== false || 
+                   stripos($adresseArrivee, 'Dakar') !== false;
+
+        // Livreur classique : seulement Dakar
+        if ($user->role === 'classique' || 
+            ($user->role === 'livreur' && isset($user->type_livreur) && $user->type_livreur === 'classique')) {
+            
+            if (!$isDakar) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'En tant que livreur classique, vous ne pouvez accepter que des livraisons vers Dakar.'
+                ], 403);
+            }
+        }
+        // Livreur urbain : pas Dakar
+        elseif ($user->role === 'urbain' || 
+                ($user->role === 'livreur' && isset($user->type_livreur) && $user->type_livreur === 'urbain')) {
+            
+            if ($isDakar) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'En tant que livreur urbain, vous ne pouvez pas accepter des livraisons vers Dakar.'
+                ], 403);
+            }
+        }
+
+        // Accepter la commande
+        $commande->driver_id = $user->user_id; // Utiliser user_id au lieu de Auth::id()
+        $commande->status = Commnande::STATUT_ACCEPTEE;
+        $commande->date_acceptation = now();
+        
+        $saved = $commande->save();
+
+        if (!$saved) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la sauvegarde de la commande.'
+            ], 500);
+        }
+
+        \Log::info('Commande acceptée avec succès', [
+            'commande_id' => $commandeId,
+            'driver_id' => $user->user_id
+        ]);
+
+        // Envoi de SMS (avec gestion d'erreur)
+        try {
+            if ($commande->user && !empty($commande->user->numero_telephone)) {
+                $livreurNom = $user->name;
+                $this->sendTwilioSMS(
+                    $commande->user->numero_telephone,
+                    "Votre commande #{$commande->reference} a été acceptée par {$livreurNom}. Il s'occupera de la livraison ! - ColisFast"
+                );
+            }
+        } catch (\Exception $smsError) {
+            // Log l'erreur SMS mais ne pas faire échouer la commande
+            \Log::warning('Erreur envoi SMS', [
+                'commande_id' => $commandeId,
+                'error' => $smsError->getMessage()
+            ]);
+        }
+
+        // Recharger la commande avec les relations
+        $commande->load('user');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Commande acceptée avec succès!',
+            'commande' => [
+                'id' => $commande->id,
+                'reference' => $commande->reference,
+                'status' => $commande->status,
+                'driver_id' => $commande->driver_id,
+                'client_nom' => $commande->user->name ?? 'Non spécifié'
+            ]
+        ]);
+
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Commande introuvable.'
+        ], 404);
+        
+    } catch (\Illuminate\Database\QueryException $e) {
+        \Log::error('Erreur base de données dans accepterCommande', [
+            'commande_id' => $commandeId,
+            'error' => $e->getMessage(),
+            'sql' => $e->getSql() ?? 'N/A'
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur de base de données. Veuillez réessayer.'
+        ], 500);
+        
+    } catch (\Exception $e) {
+        \Log::error('Erreur générale dans accepterCommande', [
+            'commande_id' => $commandeId,
+            'user_id' => Auth::id(),
+            'error' => $e->getMessage(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Une erreur inattendue s\'est produite. Veuillez réessayer.'
+        ], 500);
     }
-
-    $commande->driver_id = Auth::id();
-    $commande->status = 'acceptee';
-    $commande->date_acceptation = now();
-    $commande->save();
-
-    $livreurNom = Auth::user()->name;
-    
-    // Envoi de notification SMS via Twilio
-    $this->sendTwilioSMS(
-        $commande->user->numero_telephone, // Utilisation du champ numero_telephone
-        "Votre commande #{$commande->id} a été acceptée par $livreurNom. Il s'occupera de la livraison ! - ColisFast"
-    );
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Commande acceptée avec succès!',
-        'commande' => $commande->load('user')
-    ]);     
 }
+
+
 
 /**
  * Envoi de SMS via Twilio
@@ -572,6 +673,18 @@ public function detailsCommande($id)
 
         return view('livreur.trajets.commandes', compact('trajet', 'commandes'));
     }
+
+    public function destroy($id)
+{
+    $livreur = User::findOrFail($id);
+
+    // Soft delete
+    $livreur->delete();
+
+    return redirect()->route('admin.livreurs.index')
+                     ->with('success', 'Livreur supprimé avec succès.');
+}
+
 
     // Sauvegarde du trajet
     public function storeTrajet(Request $request)

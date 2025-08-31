@@ -6,10 +6,8 @@
 <div class="bg-gray-50 min-h-screen pb-16">
     <div class="max-w-md mx-auto bg-white shadow-sm relative min-h-screen">
 
-
         <!-- === ONGLET ACCUEIL === -->
         <div id="homeTab" class="tab-content">
-            
             <!-- Header -->
             <div class="bg-gradient-to-r from-red-600 to-red-700 text-white p-5 rounded-b-3xl shadow-md">
                 <div class="flex justify-between items-start">
@@ -37,7 +35,6 @@
                 <h2 class="font-bold text-lg mb-3 flex items-center">
                     <i class="fas fa-truck-moving text-red-600 mr-2"></i> Livraison en cours
                 </h2>
-                
                 <div id="commandeEnCours">
                     @if(isset($commandeEnCours) && $commandeEnCours)
                         @include('client.partials.commande-en-cours', ['commande' => $commandeEnCours])
@@ -47,14 +44,14 @@
                             <p class="text-gray-500">Aucune livraison en cours</p>
                             <button onclick="window.location.href='{{ url('commnandes/create') }}'" 
                                     class="mt-3 text-red-600 hover:text-red-800 font-medium">
-                                ➕ Créer une livraison
+                                Créer une livraison
                             </button>
                         </div>
                     @endif
                 </div>
             </div>
 
-            <!-- Livreurs disponibles -->
+            <!-- Livreurs disponibles (limité à 4) -->
             <div class="p-4">
                 <div class="flex justify-between items-center mb-3">
                     <h2 class="font-bold text-lg flex items-center">
@@ -67,7 +64,7 @@
                 
                 <div id="livreursDisponibles" class="grid grid-cols-2 gap-4">
                     @if(isset($livreursDisponibles) && $livreursDisponibles->count() > 0)
-                        @foreach($livreursDisponibles as $livreur)
+                        @foreach($livreursDisponibles->take(4) as $livreur)
                             @include('client.partials.livreur-card', ['livreur' => $livreur])
                         @endforeach
                     @else
@@ -82,7 +79,7 @@
             <!-- Statistiques rapides -->
             <div class="p-4 border-t mt-2">
                 <h3 class="font-bold mb-3 flex items-center">
-                    <i class="fas fa-chart-line text-red-600 mr-2"></i> Vos statistiques
+                    <i class="fas fa-chart-line text-red-600 mr-2"></i> satistiques
                 </h3>
                 <div class="grid grid-cols-3 gap-3 text-center">
                     <div class="bg-white border rounded-xl p-3 shadow-sm">
@@ -94,13 +91,13 @@
                         <div class="text-xs text-gray-500">Note moyenne</div>
                     </div>
                     <div class="bg-white border rounded-xl p-3 shadow-sm">
-                        <div class="text-xl font-bold text-red-600">{{ isset($statistiques['montant_total']) ? number_format($statistiques['montant_total']) : 0 }}</div>
+                    <div class="text-xl font-bold text-red-600"> {{ $statistiques['montant_total'] ?? 0 }}</div>
                         <div class="text-xs text-gray-500">FCFA dépensés</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Livraisons terminées à noter -->
+            <!-- Livraisons terminées à noter (limité à 2) -->
             <div class="p-4 border-t mt-4">
                 <h3 class="font-bold mb-3 flex items-center">
                     <i class="fas fa-star text-yellow-500 mr-2"></i> Livraisons terminées
@@ -112,7 +109,7 @@
                 </h3>
 
                 @if(isset($livraisonsTerminees) && count($livraisonsTerminees) > 0)
-                    @foreach($livraisonsTerminees as $livraison)
+                    @foreach($livraisonsTerminees->take(2) as $livraison)
                         <div class="bg-white shadow p-5 rounded-lg mb-4 border">
                             <!-- En-tête de la livraison -->
                             <div class="flex justify-between items-start mb-3">
@@ -144,7 +141,7 @@
                                 </div>
                                 <div class="text-right">
                                     <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-semibold">
-                                        {{ number_format($livraison->prix_final) }} FCFA
+                                        {{ number_format($livraison->prix_final, 0, ',', ' ') }} FCFA
                                     </span>
                                     <div class="text-xs text-gray-500 mt-1">{{ $livraison->type_colis }}</div>
                                 </div>
@@ -167,7 +164,7 @@
                                         @for($i = 1; $i <= 5; $i++)
                                             <svg class="w-5 h-5 {{ $i <= $livraison->evaluation->note ? 'text-yellow-400' : 'text-gray-300' }}"
                                                  fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.785.57-1.84-.197-1.54-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"/>
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3 .921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.785 .57-1.84-.197-1.54-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"/>
                                             </svg>
                                         @endfor
                                         <span class="ml-2 text-sm font-medium text-gray-700">
@@ -184,8 +181,8 @@
                                 </div>
                             @else
                                 @if($livraison->driver_id)
-                                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                        <p class="text-blue-800 font-medium mb-3 flex items-center">
+                                    <div class="bg-red-50 border border-blue-200 rounded-lg p-4">
+                                        <p class="text-red-800 font-medium mb-3 flex items-center">
                                             <i class="fas fa-star text-yellow-500 mr-2"></i>
                                             Comment s'est passée votre livraison ?
                                         </p>
@@ -205,7 +202,7 @@
                                                                    onchange="updateStars({{ $livraison->id }}, {{ $i }})">
                                                             <svg class="w-8 h-8 text-gray-300 peer-checked:text-yellow-400 group-hover:text-yellow-500 transition-all duration-200 star-{{ $livraison->id }}"
                                                                  fill="currentColor" viewBox="0 0 20 20">
-                                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3 .921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.785 .57-1.84-.197-1.54-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81 .588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"/>
+                                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969指標 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3 .921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.785 .57-1.84-.197-1.54-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81 .588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"/>
                                                             </svg>
                                                         </label>
                                                     @endfor
@@ -223,7 +220,7 @@
 
                                             <div class="flex justify-end">
                                                 <button type="submit" 
-                                                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center">
+                                                        class="bg-red-500 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center">
                                                     <i class="fas fa-paper-plane mr-2"></i>
                                                     Envoyer mon évaluation
                                                 </button>
@@ -255,11 +252,6 @@
                         <p class="text-gray-500 mb-4">
                             Vos livraisons terminées apparaîtront ici pour pouvoir les noter
                         </p>
-                        <button onclick="window.location.href='{{ url('commnandes/create') }}'" 
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                            <i class="fas fa-plus mr-2"></i>
-                            Créer une livraison
-                        </button>
                     </div>
                 @endif
             </div>
@@ -278,7 +270,6 @@
                 Mon Profil
             </h2>
 
-            <!-- Infos utilisateur -->
             <div class="flex items-center mb-6">
                 <div class="rounded-full w-16 h-16 mr-4 flex items-center justify-center
                     @if(Auth::user()->genre == 'F') bg-pink-100 text-pink-500
@@ -295,7 +286,6 @@
                 </div>
             </div>
 
-            <!-- Menu profil -->
             <div class="space-y-3">
                 <a href="{{ route('profile.edit') }}" class="menu-item">
                     <i class="fas fa-edit bg-blue-100 text-blue-600"></i>
@@ -327,7 +317,7 @@
 
 <!-- Barre navigation -->
 <div class="fixed bottom-0 left-0 right-0 bg-white border-t max-w-md mx-auto flex justify-around py-3 rounded-t-xl shadow-md">
-    <button onclick="showTab('homeTab')" class="tab-btn text-red-600">
+    <button onclick="showTab('homeTab')" class="tab-btn text-red-600 active">
         <i class="fas fa-home block text-xl"></i>
         <span class="text-xs">Accueil</span>
     </button>
@@ -375,7 +365,6 @@
 </style>
 
 <script>
-    
     function showTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
         document.getElementById(tabId).classList.remove('hidden');
@@ -409,6 +398,28 @@
                 star.classList.add('text-gray-300');
             }
         });
+    }
+
+    function ajouterFavori(livreurId) {
+        fetch('/client/ajouter-livreur-favori', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ livreur_id: livreurId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const btn = document.getElementById(`favori-btn-${livreurId}`);
+                btn.textContent = 'Favori ✓';
+                btn.disabled = true;
+                btn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            }
+        })
+        .catch(error => console.error(error));
     }
 
     document.addEventListener('DOMContentLoaded', function() {

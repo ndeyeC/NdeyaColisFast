@@ -17,7 +17,7 @@
 
     @if($livraisons->isEmpty())
         <div class="p-5 bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-xl text-center font-medium shadow-sm">
-            ❌ Aucune livraison disponible pour cette destination.
+             Aucune livraison disponible pour cette destination.
         </div>
 
         <div class="mt-6 text-center">

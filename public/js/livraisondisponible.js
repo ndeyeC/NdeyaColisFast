@@ -10,14 +10,24 @@ function accepterCommande(commandeId) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Acceptation...';
     btn.disabled = true;
 
+    // CORRECTION: S'assurer que la méthode POST est bien utilisée
     fetch(`/livreur/commandes/${commandeId}/accepter`, {
-        method: 'POST',
+        method: 'POST', // Explicitement POST
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Accept': 'application/json' // Ajouter Accept header
+        },
+        // Ajouter un body même si vide pour s'assurer que c'est une requête POST valide
+        body: JSON.stringify({})
     })
-    .then(res => res.json())
+    .then(res => {
+        // Vérifier si la réponse est OK avant de parser JSON
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+    })
     .then(data => {
         if (data.success) {
             btn.innerHTML = '<i class="fas fa-check mr-1"></i> Acceptée';
@@ -30,21 +40,29 @@ function accepterCommande(commandeId) {
             alert(data.message || 'Une erreur est survenue');
         }
     })
-    .catch(() => {
+    .catch(error => {
+        console.error('Erreur complète:', error);
         btn.innerHTML = originalText;
         btn.disabled = false;
-        alert('Erreur réseau');
+        alert('Erreur réseau: ' + error.message);
     })
     .finally(() => isAccepting = false);
 }
 
 function voirDetails(commandeId) {
     fetch(`/livreur/commandes/${commandeId}`, {
+        method: 'GET', // Cette route est bien GET
         headers: {
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             document.getElementById('detailsContent').innerHTML = `
@@ -61,15 +79,10 @@ function voirDetails(commandeId) {
         }
     })
     .catch(error => {
-        console.error(error);
-        alert('Erreur lors du chargement des détails');
+        console.error('Erreur:', error);
+        alert('Erreur lors du chargement des détails: ' + error.message);
     });
 }
-
-function fermerModal() {
-    document.getElementById('detailsModal').classList.add('hidden');
-}
-
 
 function fermerModal() {
     document.getElementById('detailsModal').classList.add('hidden');

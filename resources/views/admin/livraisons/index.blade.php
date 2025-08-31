@@ -65,9 +65,7 @@
             <a href="{{ route('admin.livraisons.problemes') }}" class="btn btn-warning btn-sm">
                 <i class="fas fa-exclamation-triangle"></i> Problèmes Signalés ({{ $stats['problemes_signales'] }})
             </a>
-            <!-- <button type="button" class="btn btn-success btn-sm" onclick="exportLivraisons()">
-                <i class="fas fa-download"></i> Exporter
-            </button> -->
+            
         </div>
     </div>
     <div class="card-body">
@@ -190,7 +188,7 @@
 </div>
         <!-- Pagination -->
         <div class="d-flex justify-content-center mt-4">
-            {{ $livraisons->appends(request()->query())->links() }}
+            {{ $livraisons->appends(request()->query())->links('pagination::bootstrap-5') }}
         </div>
     </div>
 </div>

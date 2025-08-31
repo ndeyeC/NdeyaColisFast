@@ -35,13 +35,12 @@ class AuthenticatedSessionController extends Controller
     } elseif ($user->role === 'livreur') {
         return redirect()->route('livreur.dashboarde'); 
     } elseif ($user->role === 'admin') {
-        return redirect()->route('admin.dashboard'); // Tableau de bord admin
+        return redirect()->route('admin.dashboard'); 
     }
 
     
     return redirect('/');
 
-        // return redirect()->intended(route('dashboard', absolute: false));
     }
 
     /**

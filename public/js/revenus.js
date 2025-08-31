@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
 
-    //  Charger les données dynamiquement
     fetch(revenusGraphUrl)
     .then(response => response.json())
     .then(data => {

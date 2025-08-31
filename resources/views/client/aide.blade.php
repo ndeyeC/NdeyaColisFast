@@ -7,7 +7,7 @@
     <div class="max-w-2xl mx-auto bg-white shadow-md rounded-2xl p-6">
 
     <!-- 🔙 Bouton retour vers le Dashboard -->
-<a href="{{ route('client.dashboard') }}" 
+<a href="{{ route('dashboard') }}" 
    class="absolute top-3 left-3 flex items-center px-3 py-1.5 
           bg-gray-100 hover:bg-red-50 border border-gray-200 rounded-lg 
           text-gray-700 hover:text-red-600 text-base font-medium 
@@ -48,7 +48,6 @@
                 </h3>
                 <p class="text-gray-600 text-sm mt-2">
                     Rendez-vous dans <span class="font-semibold">“Livraison en cours”</span> sur la page d’accueil. 
-                    Vous y verrez la position du livreur en temps réel.
                 </p>
             </div>
 
@@ -87,7 +86,7 @@
 
         <!-- Footer info -->
         <p class="text-xs text-gray-400 text-center mt-6">
-            Nous sommes disponibles 7j/7 pour vous accompagner 🚀
+            Nous sommes disponibles 7j/7 pour vous accompagner 
         </p>
     </div>
 </div>

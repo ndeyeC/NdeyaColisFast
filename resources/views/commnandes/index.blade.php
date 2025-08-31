@@ -55,29 +55,9 @@
                                     <p class="text-xs text-gray-500">{{ $commande->created_at->format('d M Y à H:i') }}</p>
                                 </div>
                             </div>
-                            
-                            <!-- Badge statut -->
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
-                                @if($commande->statut == 'LIVRÉE') 
-                                    bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-200
-                                @elseif($commande->statut == 'ANNULÉE') 
-                                    bg-gradient-to-r from-red-100 to-red-200 text-red-800 border border-red-200
-                                @else 
-                                    bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-200
-                                @endif">
-                                @if($commande->status == 'LIVRÉE')
-                                    <i class="fas fa-check-circle mr-1"></i>
-                                @elseif($commande->status == 'ANNULÉE')
-                                    <i class="fas fa-times-circle mr-1"></i>
-                                @else
-                                    <i class="fas fa-clock mr-1"></i>
-                                @endif
-                                {{ strtoupper($commande->status) }}
-                            </span>
                         </div>
                     </div>
 
-                    <!-- Contenu de la commande -->
                     <div class="p-6">
                         
                         <!-- Itinéraire -->

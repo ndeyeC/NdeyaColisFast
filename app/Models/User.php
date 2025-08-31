@@ -7,9 +7,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+
 
 class User extends Authenticatable
 {
+
+        use SoftDeletes;
+
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
@@ -44,7 +51,7 @@ class User extends Authenticatable
 
     public function commandes()
     {
-        return $this->hasMany(Commande::class, 'user_id', 'user_id');
+        return $this->hasMany(Commnande::class, 'user_id', 'user_id');
     }
 
     public function historiqueLivraisons()
@@ -57,15 +64,27 @@ class User extends Authenticatable
         return $this->hasMany(TokenTransaction::class, 'user_id', 'user_id');
     }
 
-    public function getTokenBalanceAttribute()
-    {
-        return $this->tokens()->sum('amount');
-    }
+   public function getTokenBalanceAttribute()
+{
+    // Utilisez le calcul FIFO pour la zone Dakar par défaut
+    $dakarZone = DeliveryZone::where('name', 'Dakar')->first();
+    return $dakarZone ? $this->getValidTokensForZone($dakarZone->id) : 0;
+}
 
     public function livreur()
     {
         return $this->hasOne(Livreur::class, 'user_id', 'user_id');
     }
+
+    public function livreursFavoris()
+{
+    return $this->belongsToMany(User::class, 'favoris', 'user_id', 'livreur_id');
+}
+
+public function clientsFavoris()
+{
+    return $this->belongsToMany(User::class, 'favoris', 'livreur_id', 'user_id');
+}
 
     public function sentCommunications()
     {
@@ -85,6 +104,18 @@ class User extends Authenticatable
     public function communications()
     {
         return $this->sentCommunications()->union($this->receivedCommunications());
+    }
+
+
+     public function setIdCardAttribute($value)
+    {
+        $this->attributes['id_card'] = $value ? Crypt::encryptString($value) : null;
+    }
+
+
+     public function getIdCardAttribute($value)
+    {
+        return $value ? Crypt::decryptString($value) : null;
     }
 
     // TOKEN METHODS - FIXED VERSIONS
@@ -127,7 +158,6 @@ class User extends Authenticatable
             throw new \Exception("Jetons insuffisants. Disponibles: {$validTokens}, Requis: {$amount}");
         }
 
-        // FIXED: Créer la transaction de débit manuellement si createUsage n'existe pas
         try {
             if (method_exists(TokenTransaction::class, 'createUsage')) {
                 $transaction = TokenTransaction::createUsage(
@@ -177,95 +207,71 @@ class User extends Authenticatable
     /**
      * Obtenir le solde de jetons valides pour une zone spécifique (FIXED)
      */
-    public function getValidTokensForZone($zoneId)
-    {
-        // FIXED: Use user_id consistently
-        if (!$this->user_id) {
-            \Log::error('Aucun utilisateur authentifié dans getValidTokensForZone');
-            throw new \Exception('Utilisateur non authentifié.');
+public function getValidTokensForZone($zoneId)
+{
+    if (!$this->user_id) {
+        \Log::error('Aucun utilisateur authentifié dans getValidTokensForZone');
+        throw new \Exception('Utilisateur non authentifié.');
+    }
+
+    $dakarZone = DeliveryZone::where('name', 'Dakar')->first();
+    $dakarZoneId = $dakarZone ? $dakarZone->id : null;
+
+    // Récupérer tous les achats complétés, triés par date croissante (FIFO)
+    $purchases = $this->tokenTransactions()
+        ->where('status', 'completed')
+        ->where('type', 'achat')
+        ->where(function ($query) use ($zoneId, $dakarZoneId) {
+            $query->where('delivery_zone_id', $zoneId)
+                  ->orWhere('delivery_zone_id', $dakarZoneId)
+                  ->orWhereNull('delivery_zone_id');
+        })
+        ->orderBy('created_at', 'asc') // Les plus anciens d'abord
+        ->get();
+
+    // Nombre total d'utilisations pour la zone
+    $totalUsages = $this->tokenTransactions()
+        ->where('status', 'completed')
+        ->where('type', 'usage')
+        ->where(function ($query) use ($zoneId, $dakarZoneId) {
+            $query->where('delivery_zone_id', $zoneId)
+                  ->orWhere('delivery_zone_id', $dakarZoneId)
+                  ->orWhereNull('delivery_zone_id');
+        })
+        ->count();
+
+    $available = 0;
+    $remainingUsages = $totalUsages;
+
+    foreach ($purchases as $purchase) {
+        $purchaseAmount = $purchase->amount; // Typiquement 1 par achat, mais général
+
+        // Attribuer les usages au jeton actuel
+        if ($remainingUsages > 0) {
+            $consumed = min($purchaseAmount, $remainingUsages);
+            $remainingUsages -= $consumed;
+            $effectiveAmount = $purchaseAmount - $consumed;
+        } else {
+            $effectiveAmount = $purchaseAmount;
         }
 
-        \Log::info('Appel de getValidTokensForZone', [
-            'user_id' => $this->user_id,
-            'zone_id' => $zoneId
-        ]);
-
-        // Debug: Vérifier toutes les transactions de l'utilisateur
-        $allTransactions = $this->tokenTransactions()->get();
-        \Log::info('Toutes les transactions de l\'utilisateur', [
-            'user_id' => $this->user_id,
-            'total_transactions' => $allTransactions->count(),
-            'transactions' => $allTransactions->map(function($t) {
-                return [
-                    'id' => $t->id,
-                    'amount' => $t->amount,
-                    'type' => $t->type,
-                    'status' => $t->status,
-                    'zone_id' => $t->delivery_zone_id
-                ];
-            })->toArray()
-        ]);
-
-        // FIXED: Récupérer l'ID de la zone Dakar dynamiquement
-        $dakarZone = DeliveryZone::where('name', 'Dakar')->first();
-        $dakarZoneId = $dakarZone ? $dakarZone->id : null;
-        
-        // FIXED: Use string values that match your database
-        $purchaseQuery = $this->tokenTransactions()
-            ->where('status', 'completed') // Use string directly
-            ->where('type', 'achat')       // Use string directly (from your DB)
-            ->where(function ($query) use ($zoneId, $dakarZoneId) {
-                if ($dakarZoneId) {
-                    $query->where('delivery_zone_id', $dakarZoneId)
-                          ->orWhere('delivery_zone_id', $zoneId)
-                          ->orWhereNull('delivery_zone_id');
-                } else {
-                    $query->whereNull('delivery_zone_id');
-                }
-            })
-            ->where(function ($query) {
-                $query->whereNull('expiry_date')
-                      ->orWhere('expiry_date', '>', now());
-            });
-
-        $purchaseTokens = $purchaseQuery->sum('amount');
-        
-        // Debug the purchase query
-        \Log::info('Purchase query debug', [
-            'sql' => $purchaseQuery->toSql(),
-            'bindings' => $purchaseQuery->getBindings(),
-            'results' => $purchaseQuery->get()->toArray()
-        ]);
-        
-        // Get usage tokens (negative amounts)
-        $usageQuery = $this->tokenTransactions()
-            ->where('status', 'completed') // Use string directly
-            ->where('type', 'usage')       // Use string directly
-            ->where(function ($query) use ($zoneId, $dakarZoneId) {
-                if ($dakarZoneId) {
-                    $query->where('delivery_zone_id', $dakarZoneId)
-                          ->orWhere('delivery_zone_id', $zoneId)
-                          ->orWhereNull('delivery_zone_id');
-                } else {
-                    $query->whereNull('delivery_zone_id');
-                }
-            });
-
-        $usageTokens = $usageQuery->sum('amount');
-
-        $totalTokens = $purchaseTokens + $usageTokens;
-
-        \Log::info('Tokens calculés avec debug détaillé', [
-            'user_id' => $this->user_id,
-            'zone_id' => $zoneId,
-            'dakar_zone_id' => $dakarZoneId,
-            'purchase_tokens' => $purchaseTokens,
-            'usage_tokens' => $usageTokens,
-            'total_tokens' => $totalTokens
-        ]);
-
-        return max(0, $totalTokens);
+        // Ajouter seulement si non expiré
+        if (!$purchase->expiry_date || $purchase->expiry_date > now()) {
+            $available += max(0, $effectiveAmount);
+        }
     }
+
+    \Log::info('Calcul des jetons FIFO', [
+        'user_id' => $this->user_id,
+        'zone_id' => $zoneId,
+        'dakar_zone_id' => $dakarZoneId,
+        'total_purchases' => $purchases->count(),
+        'total_usages' => $totalUsages,
+        'available' => $available,
+    ]);
+
+    return max(0, $available);
+}
 
     /**
      * Obtenir tous les jetons valides pour la zone Dakar - FIXED
