@@ -138,7 +138,7 @@
                 <input type="hidden" name="amount" id="tokenAmountInput" value="">
                 <button type="submit" id="submitButton" disabled
                         class="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-md">
-                    <i class="fas fa-shopping-cart mr-2"></i> Acheter avec CinetPay
+                    <i class="fas fa-credit-card mr-2"></i> Payer avec PayDunya
                 </button>
                 <p class="mt-4 text-center text-xs text-gray-500">
                    Les jetons ont une durée de validité limitée d'une semaine.
@@ -158,12 +158,10 @@
                 <div class="flex justify-between items-start">
                     <div>
                         @if($transaction->amount > 0)
-                            {{-- Achat : texte neutre --}}
                             <p class="text-gray-800 font-semibold">
                                 +{{ $transaction->amount }} jeton{{ $transaction->amount != 1 ? 's' : '' }}
                             </p>
                         @elseif($transaction->amount < 0)
-                            {{-- Utilisation : texte rouge --}}
                             <p class="text-red-600 font-semibold">
                                 {{ $transaction->amount }} jeton{{ abs($transaction->amount) != 1 ? 's' : '' }} utilisé
                             </p>

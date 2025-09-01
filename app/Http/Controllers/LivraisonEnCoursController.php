@@ -475,13 +475,19 @@ public function annulerLivraison(Request $request, $commandeId)
             'raison' => 'required|string|max:500'
         ]);
 
-        // Vérifier l'existence et l'accès à la commande
+        // Vérifier l'existence et l'accès à la commande - CORRECTION ICI
         $commande = Commnande::where('id', $commandeId)
             ->where('driver_id', Auth::id())
-            ->whereIn('status', ['acceptee', 'en_c "“rs'])
+            ->whereIn('status', ['acceptee', 'en_cours']) // Vérifier les deux statuts
             ->first();
 
         if (!$commande) {
+            Log::warning("Commande non trouvée pour annulation", [
+                'commande_id' => $commandeId,
+                'driver_id' => Auth::id(),
+                'status_actuel' => Commnande::where('id', $commandeId)->value('status')
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Commande non trouvée ou non accessible.'
@@ -499,7 +505,7 @@ public function annulerLivraison(Request $request, $commandeId)
         // Supprimer la route de livraison associée
         $deleted = DeliveryRoute::where('commande_id', $commandeId)->delete();
 
-        Log::info("Livraison annulée", [
+        Log::info("Livraison annulée avec succès", [
             'commande_id' => $commandeId,
             'driver_id' => Auth::id(),
             'raison' => $validated['raison'],

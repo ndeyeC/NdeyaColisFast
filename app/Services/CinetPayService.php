@@ -30,161 +30,83 @@ class CinetPayService
         }
     }
 
-    public function createPaymentRequest(array $data): array
-    {
-        try {
-            // Validation des données requises
-            if (!isset($data['item_price']) || $data['item_price'] <= 0) {
-                return [
-                    'success' => false,
-                    'message' => 'Prix invalide',
-                    'status_code' => 422
-                ];
-            }
-
-            if (empty($data['ref_command'])) {
-                return [
-                    'success' => false,
-                    'message' => 'Référence de commande obligatoire',
-                    'status_code' => 422
-                ];
-            }
-
-            // Vérifier les credentials
-            if (empty($this->apiKey) || empty($this->siteId)) {
-                Log::error('CinetPay credentials missing', [
-                    'api_key_set' => !empty($this->apiKey),
-                    'site_id_set' => !empty($this->siteId)
-                ]);
-                return [
-                    'success' => false,
-                    'message' => 'Configuration CinetPay incomplète',
-                    'status_code' => 500
-                ];
-            }
-
-            // Préparer le payload CinetPay selon la documentation officielle
-            $payload = [
-                'amount' => (int)$data['item_price'], // Montant en FCFA
-                'currency' => $this->currency,
-                'transaction_id' => $data['ref_command'],
-                'description' => $data['item_name'] ?? 'Commande',
-                'return_url' => $data['success_url'] ?? '',
-                'notify_url' => $data['ipn_url'] ?? '',
-                'cancel_url' => $data['cancel_url'] ?? '',
-                'customer_name' => $data['customer_name'] ?? '',
-                'customer_surname' => $data['customer_surname'] ?? '',
-                'customer_email' => $data['customer_email'] ?? '',
-                'customer_phone_number' => $data['customer_phone'] ?? '',
-                'customer_address' => $data['customer_address'] ?? '',
-                'customer_city' => $data['customer_city'] ?? '',
-                'customer_country' => $data['customer_country'] ?? 'SN',
-                'customer_state' => $data['customer_state'] ?? '',
-                'customer_zip_code' => $data['customer_zip'] ?? '',
-                'apikey' => $this->apiKey,
-                'site_id' => $this->siteId,
-                'channels' => 'ALL',
-                'metadata' => is_array($data['custom_field'] ?? null) 
-                    ? json_encode($data['custom_field']) 
-                    : ($data['custom_field'] ?? '{}')
-            ];
-
-            // Log pour debug (masquer les données sensibles)
-            Log::info('CinetPay payment request', [
-                'endpoint' => $this->baseUrl . '/v2/payment',
-                'amount' => $payload['amount'],
-                'currency' => $payload['currency'],
-                'transaction_id' => $payload['transaction_id'],
-                'site_id_present' => !empty($payload['site_id']),
-                'api_key_present' => !empty($payload['apikey'])
-            ]);
-
-            // Faire la requête HTTP
-            $response = Http::withOptions([
-                'verify' => app()->environment('production'),
-                'timeout' => $this->timeout,
-            ])->withHeaders([
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-            ])->post($this->baseUrl . '/v2/payment', $payload);
-
-            // Log de la réponse complète
-            Log::info('CinetPay raw response', [
-                'status' => $response->status(),
-                'headers' => $response->headers(),
-                'body' => $response->body()
-            ]);
-
-            $responseBody = $response->json() ?: [];
-
-            // Vérifier la réponse selon la documentation CinetPay
-            if ($response->successful() && isset($responseBody['code'])) {
-                // Code 201 = succès pour l'initialisation du paiement
-                if ($responseBody['code'] == '201') {
-                    return [
-                        'success' => true,
-                        'message' => $responseBody['message'] ?? 'Paiement initialisé',
-                        'data' => [
-                            'token' => $responseBody['data']['payment_token'] ?? null,
-                            'redirect_url' => $responseBody['data']['payment_url'] ?? null,
-                            'transaction_id' => $responseBody['data']['payment_token'] ?? $data['ref_command'],
-                            'raw_response' => $responseBody
-                        ],
-                        'status_code' => $response->status()
-                    ];
-                } else {
-                    // Code d'erreur CinetPay
-                    $message = $responseBody['message'] ?? 'Erreur CinetPay';
-                    $errors = $responseBody['data'] ?? [];
-                    
-                    Log::error('CinetPay payment failed', [
-                        'response_code' => $responseBody['code'],
-                        'message' => $message,
-                        'errors' => $errors,
-                        'full_response' => $responseBody
-                    ]);
-                    
-                    return [
-                        'success' => false,
-                        'message' => $message,
-                        'errors' => $errors,
-                        'status_code' => $response->status(),
-                        'raw_response' => $responseBody
-                    ];
-                }
-            } else {
-                // Erreur HTTP ou réponse malformée
-                $message = $responseBody['message'] ?? 'Erreur de communication avec CinetPay';
-                
-                Log::error('CinetPay HTTP error', [
-                    'http_status' => $response->status(),
-                    'response_body' => $responseBody,
-                    'is_successful' => $response->successful()
-                ]);
-                
-                return [
-                    'success' => false,
-                    'message' => $message,
-                    'status_code' => $response->status(),
-                    'raw_response' => $responseBody
-                ];
-            }
-
-        } catch (\Exception $e) {
-            Log::error('CinetPay exception: ' . $e->getMessage(), [
-                'exception' => get_class($e),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
+   public function createPaymentRequest(array $data): array
+{
+    try {
+        // Validation des données requises (code existant...)
+        
+        // NOUVELLE VALIDATION DES CREDENTIALS
+        if (empty($this->masterKey) || empty($this->privateKey) || empty($this->token)) {
+            Log::error('PayDunya credentials validation failed', [
+                'master_key_empty' => empty($this->masterKey),
+                'private_key_empty' => empty($this->privateKey),
+                'token_empty' => empty($this->token),
+                'master_key_length' => strlen($this->masterKey ?? ''),
+                'private_key_length' => strlen($this->privateKey ?? ''),
+                'token_length' => strlen($this->token ?? ''),
             ]);
             
             return [
                 'success' => false,
-                'message' => 'Erreur système: ' . $e->getMessage(),
+                'message' => 'Configuration PayDunya incomplète - Vérifiez vos clés API',
                 'status_code' => 500
             ];
         }
+
+        // Validation du format des clés
+        if (strlen($this->masterKey) < 10 || strlen($this->privateKey) < 10 || strlen($this->token) < 10) {
+            Log::error('PayDunya credentials seem too short', [
+                'master_key_length' => strlen($this->masterKey),
+                'private_key_length' => strlen($this->privateKey),
+                'token_length' => strlen($this->token),
+            ]);
+            
+            return [
+                'success' => false,
+                'message' => 'Format des clés PayDunya invalide',
+                'status_code' => 500
+            ];
+        }
+
+        // Reste du code existant...
+        
+        // Headers PayDunya avec log détaillé
+        $headers = [
+            'PAYDUNYA-MASTER-KEY' => $this->masterKey,
+            'PAYDUNYA-PRIVATE-KEY' => $this->privateKey,
+            'PAYDUNYA-TOKEN' => $this->token,
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json'
+        ];
+
+        Log::info('PayDunya request headers prepared', [
+            'master_key_used' => substr($this->masterKey, 0, 10) . '...',
+            'private_key_used' => substr($this->privateKey, 0, 10) . '...',
+            'token_used' => substr($this->token, 0, 10) . '...',
+            'mode' => $this->mode,
+        ]);
+
+        // Faire la requête HTTP (code existant...)
+        
+    } catch (\Exception $e) {
+        Log::error('PayDunya exception: ' . $e->getMessage(), [
+            'exception' => get_class($e),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'credentials_present' => [
+                'master_key' => !empty($this->masterKey),
+                'private_key' => !empty($this->privateKey),
+                'token' => !empty($this->token),
+            ]
+        ]);
+        
+        return [
+            'success' => false,
+            'message' => 'Erreur système: ' . $e->getMessage(),
+            'status_code' => 500
+        ];
     }
+}
 
     public function checkPaymentStatus(string $transactionId): array
     {

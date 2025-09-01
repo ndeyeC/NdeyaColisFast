@@ -8,6 +8,7 @@ use App\Models\Commnande;
 use App\Models\User;
 use App\Models\Evaluation;
 use App\Models\Zone;
+use App\Services\PayDunyaService;
 use App\Models\DeliveryZone;
 use App\Models\Tarif;
 use App\Services\CinetPayService;
@@ -18,16 +19,18 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use App\Notifications\SupportColisfast;
 
+
 class CommnandeController extends Controller
 {
-    protected $cinetPayService;
-    protected $geocodingService;
+              protected $payDunyaService;
+                protected $geocodingService;
 
-    public function __construct(CinetPayService $cinetPayService, GeocodingService $geocodingService)
+    public function __construct(PayDunyaService $payDunyaService, GeocodingService $geocodingService) // Changement ici
     {
-        $this->cinetPayService = $cinetPayService;
+        $this->payDunyaService = $payDunyaService; // Changement ici
         $this->geocodingService = $geocodingService;
     }
+
 
  public function create()
 {
@@ -248,7 +251,7 @@ public function store(Request $request)
         ]);
 
         DB::commit();
-        return $this->redirectToCinetPay($commande, $validated);
+       return $this->redirectToPayDunya($commande, $validated);
 
     } catch (\Exception $e) {
         DB::rollBack();
@@ -264,169 +267,143 @@ public function store(Request $request)
     }
 }
 
-    private function redirectToCinetPay(Commnande $commande, array $validated)
-    {
-        try {
-            $successUrl = rtrim(config('app.url'), '/') . route('commnandes.payment.success', [], false);
-            $ipnUrl = rtrim(config('app.url'), '/') . route('commnandes.payment.ipn', [], false);
-            $cancelUrl = rtrim(config('app.url'), '/') . route('commnandes.payment.cancel', [], false);
+  private function redirectToPayDunya(Commnande $commande, array $validated)
+{
+    try {
+        $successUrl = rtrim(config('app.url'), '/') . route('commnandes.payment.success', [], false);
+        $ipnUrl = rtrim(config('app.url'), '/') . route('commnandes.payment.ipn', [], false);
+        $cancelUrl = rtrim(config('app.url'), '/') . route('commnandes.payment.cancel', [], false);
 
-            if (!filter_var($successUrl, FILTER_VALIDATE_URL) ||
-                !filter_var($ipnUrl, FILTER_VALIDATE_URL) ||
-                !filter_var($cancelUrl, FILTER_VALIDATE_URL)) {
-                throw new \Exception('Invalid URL format for CinetPay');
+        // VALIDATION CORRIGÉE - Autoriser localhost en développement
+        $urls = [$successUrl, $ipnUrl, $cancelUrl];
+        foreach ($urls as $url) {
+            if (!filter_var($url, FILTER_VALIDATE_URL)) {
+                Log::error('URL de callback invalide', ['url' => $url]);
+                throw new \Exception('URL de callback invalide : ' . $url);
             }
-
-            $paymentData = [
-                'item_name' => "Livraison {$commande->reference}",
-                'item_price' => $commande->prix_final,
-                'ref_command' => $commande->reference,
-                'success_url' => $successUrl,
-                'ipn_url' => $ipnUrl,
-                'cancel_url' => $cancelUrl,
-                'custom_field' => [
-                    'commande_id' => $commande->id,
-                    'user_id' => Auth::id(),
-                ],
-                'customer_name' => $validated['customer_name'] ?? Auth::user()->name,
-                'customer_surname' => $validated['customer_surname'] ?? '',
-                'customer_email' => $validated['customer_email'] ?? Auth::user()->email,
-                'customer_phone' => $validated['customer_phone'] ?? $validated['numero_telephone'],
-                'customer_address' => $validated['adresse_depart'],
-                'customer_city' => $validated['region_depart'] ?? 'Dakar',
-                'customer_country' => 'SN',
-                'customer_state' => '',
-                'customer_zip' => '',
-            ];
-
-            Log::info('CinetPay payment request data', $paymentData);
-
-            $response = $this->cinetPayService->createPaymentRequest($paymentData);
-
-            if (!$response['success']) {
-                throw new \Exception($response['message']);
-            }
-
-            Log::info('CinetPay payment initiated', [
-                'commande_id' => $commande->id,
-                'transaction_id' => $response['data']['transaction_id'],
-                'payment_url' => $response['data']['redirect_url'],
-            ]);
-
-            return redirect($response['data']['redirect_url']);
-        } catch (\Exception $e) {
-            Log::error('Erreur lors de la redirection vers CinetPay', [
-                'error' => $e->getMessage(),
-                'commande_id' => $commande->id,
-            ]);
-            return redirect()->back()
-                ->with('error', 'Erreur lors de la redirection vers le paiement : ' . $e->getMessage())
-                ->withInput();
-        }
-    }
-
-    public function ipnCallback(Request $request)
-    {
-        Log::info('IPN CinetPay reçu', $request->all());
-        
-        if (!app()->environment('local', 'testing')) {
-            if (!$this->cinetPayService->verifySignature($request->all())) {
-                Log::error('Signature IPN CinetPay invalide');
-                return response()->json(['status' => 'error', 'message' => 'Signature invalide'], 400);
-            }
-        }
-
-        $transactionId = $request->input('cpm_trans_id');
-        
-        if (!$transactionId) {
-            return response()->json(['status' => 'error', 'message' => 'Transaction ID manquant'], 400);
-        }
-        
-        $statusResponse = $this->cinetPayService->checkPaymentStatus($transactionId);
-        
-        if (!$statusResponse['success']) {
-            Log::error('Erreur vérification statut CinetPay', $statusResponse);
-            return response()->json(['status' => 'error', 'message' => 'Erreur vérification statut'], 500);
-        }
-        
-        $paymentStatus = $statusResponse['data']['payment_status'] ?? null;
-        
-        $metadata = $request->input('cpm_custom') ?? $statusResponse['data']['custom'] ?? '{}';
-        
-        $customData = json_decode($metadata, true);
-        $commandeId = $customData['commande_id'] ?? null;
-        
-        if (!$commandeId) {
-            return response()->json(['status' => 'error', 'message' => 'ID commande manquant'], 400);
-        }
-        
-        $commande = Commnande::find($commandeId);
-        
-        if (!$commande) {
-            return response()->json(['status' => 'error', 'message' => 'Commande non trouvée'], 404);
-        }
-        
-        if ($paymentStatus === 'completed') {
-            $commande->status = 'payee';
-            $commande->date_paiement = now();
-            $commande->save();
             
-            Log::info('Paiement complété pour la commande ' . $commande->reference);
+            // Bloquer localhost SEULEMENT en production
+            if (app()->environment('production') && strpos($url, 'localhost') !== false) {
+                Log::error('URL localhost non autorisée en production', ['url' => $url]);
+                throw new \Exception('URL localhost non accessible publiquement en production : ' . $url);
+            }
         }
+
+        // Reste du code inchangé...
+        $paymentData = [
+            'item_name' => "Livraison {$commande->reference}",
+            'item_price' => $commande->prix_final,
+            'ref_command' => $commande->reference,
+            'success_url' => $successUrl,
+            'ipn_url' => $ipnUrl,
+            'cancel_url' => $cancelUrl,
+            'custom_field' => [
+                'commande_id' => $commande->id,
+                'user_id' => Auth::id(),
+            ],
+            'customer_name' => $validated['customer_name'] ?? Auth::user()->name,
+            'customer_email' => $validated['customer_email'] ?? Auth::user()->email,
+            'customer_phone' => $validated['customer_phone'] ?? $validated['numero_telephone'],
+        ];
+
+        $response = $this->payDunyaService->createPaymentRequest($paymentData);
+
+        if ($response['success'] && isset($response['data']['redirect_url'])) {
+            return redirect($response['data']['redirect_url']);
+        }
+
+        throw new \Exception($response['message'] ?? 'Erreur lors de l\'initialisation du paiement');
         
-        return response()->json(['status' => 'success', 'message' => 'IPN traité']);
+    } catch (\Exception $e) {
+        Log::error('Erreur PayDunya', [
+            'message' => $e->getMessage(),
+            'commande_id' => $commande->id,
+        ]);
+        return redirect()->back()
+            ->with('error', 'Erreur lors de la redirection vers le paiement : ' . $e->getMessage())
+            ->withInput();
     }
-    
-    public function paymentSuccess(Request $request)
-    {
-        $transactionId = $request->query('transaction_id') ?? $request->query('token');
-        
-        if (!$transactionId) {
-            return redirect()->route('commnandes.index')
-                ->with('error', 'Information de paiement manquante');
-        }
-        
-        $statusResponse = $this->cinetPayService->checkPaymentStatus($transactionId);
-        
-        if (!$statusResponse['success']) {
-            return redirect()->route('commnandes.index')
-                ->with('error', 'Erreur lors de la vérification du paiement');
-        }
-        
-        $paymentStatus = $statusResponse['data']['payment_status'] ?? null;
-        
-        $customData = json_decode($statusResponse['data']['custom'] ?? '{}', true);
-        $commandeId = $customData['commande_id'] ?? null;
-        
-        if (!$commandeId) {
-            return redirect()->route('commnandes.index')
-                ->with('error', 'Commande non trouvée');
-        }
-        
-        $commande = Commnande::find($commandeId);
-        
-        if (!$commande) {
-            return redirect()->route('commnandes.index')
-                ->with('error', 'Commande non trouvée');
-        }
-        
-        if ($paymentStatus === 'completed') {
-            return redirect()->route('commnandes.confirmation', $commande->id)
-                ->with('success', 'Paiement effectué avec succès!');
-        }
-        
+}
+
+
+   public function ipnCallback(Request $request)
+{
+    Log::info('IPN PayDunya reçu', $request->all());
+
+    $data = json_decode($request->input('data', '{}'), true);
+    $token = $data['invoice']['token'] ?? null;
+
+    if (!$token) {
+        return response()->json(['status' => 'error', 'message' => 'Token manquant'], 400);
+    }
+
+    $statusResponse = $this->payDunyaService->checkPaymentStatus($token);
+
+    if (!$statusResponse['success']) {
+        Log::error('Erreur vérification statut PayDunya', $statusResponse);
+        return response()->json(['status' => 'error', 'message' => 'Erreur vérification statut'], 500);
+    }
+
+    $paymentStatus = $statusResponse['data']['payment_status'] ?? null;
+
+    // Utiliser transaction_id comme référence
+    $customData = $statusResponse['data']['custom_data'] ?? [];
+    $transactionId = $customData['transaction_id'] ?? null;
+
+    if (!$transactionId) {
+        return response()->json(['status' => 'error', 'message' => 'Transaction ID manquant'], 400);
+    }
+
+    $commande = Commnande::where('transaction_id', $transactionId)->first();
+
+    if (!$commande) {
+        return response()->json(['status' => 'error', 'message' => 'Commande non trouvée'], 404);
+    }
+
+    if ($paymentStatus === 'completed') {
+        $commande->status = 'payee';
+        $commande->date_paiement = now();
+        $commande->save();
+
+        Log::info('Paiement complété pour la commande ' . $commande->reference);
+    }
+
+    return response()->json(['status' => 'success', 'message' => 'IPN traité']);
+}
+
+public function paymentSuccess(Request $request)
+{
+    $transactionId = $request->query('transaction_id');
+
+    $commande = Commnande::where('transaction_id', $transactionId)->first();
+
+    if (!$commande) {
         return redirect()->route('commnandes.index')
-            ->with('warning', 'Le statut de votre paiement est en attente de confirmation');
+            ->with('error', 'Commande introuvable');
     }
+
+    // Vérifier le paiement via PayDunya
+    $statusResponse = $this->payDunyaService->checkPaymentStatus($commande->transaction_id);
+
+    if ($statusResponse['success'] && $statusResponse['data']['payment_status'] === 'completed') {
+        return redirect()->route('commnandes.confirmation', $commande->id)
+            ->with('success', 'Paiement effectué avec succès !');
+    }
+
+    return redirect()->route('commnandes.index')
+        ->with('warning', 'Le paiement est en attente de confirmation.');
+}
+
+
 
     public function paymentCancel(Request $request)
     {
-        $transactionId = $request->query('transaction_id') ?? $request->query('token');
+        $token = $request->query('token');
         
-        if ($transactionId) {
-            $statusResponse = $this->cinetPayService->checkPaymentStatus($transactionId);
+        if ($token) {
+            $statusResponse = $this->payDunyaService->checkPaymentStatus($token);
             if ($statusResponse['success']) {
-                $customData = json_decode($statusResponse['data']['custom'] ?? '{}', true);
+                $customData = $statusResponse['data']['custom_data'] ?? [];
                 $commandeId = $customData['commande_id'] ?? null;
                 
                 if ($commandeId) {
@@ -439,25 +416,26 @@ public function store(Request $request)
             ->with('error', 'Le paiement a été annulé');
     }
 
-    public function diagnosticCinetPay()
+    public function diagnosticPayDunya() // Nouvelle méthode de diagnostic
     {
         if (app()->environment('production')) {
             abort(403, 'Non autorisé en production');
         }
 
         $config = [
-            'site_id_present' => !empty(config('cinetpay.site_id')),
-            'api_key_present' => !empty(config('cinetpay.api_key')),
-            'secret_key_present' => !empty(config('cinetpay.secret_key')),
-            'base_url' => config('cinetpay.base_url'),
-            'currency' => config('cinetpay.currency'),
-            'env' => config('cinetpay.env'),
+            'master_key_present' => !empty(config('paydunya.master_key')),
+            'private_key_present' => !empty(config('paydunya.private_key')),
+            'public_key_present' => !empty(config('paydunya.public_key')),
+            'token_present' => !empty(config('paydunya.token')),
+            'base_url' => config('paydunya.base_url'),
+            'currency' => config('paydunya.currency'),
+            'mode' => config('paydunya.mode'),
             'app_env' => app()->environment(),
             'app_url' => config('app.url'),
         ];
 
         $testData = [
-            'item_name' => 'Diagnostic CinetPay',
+            'item_name' => 'Diagnostic PayDunya',
             'item_price' => '10.00',
             'ref_command' => 'DIAG-' . uniqid(),
             'command_name' => 'Test Diagnostic',
@@ -465,8 +443,8 @@ public function store(Request $request)
             'ipn_url' => url('/diagnostic-ipn'),
             'cancel_url' => url('/diagnostic-cancel'),
             'custom_field' => [
-            'test' => true,
-            'timestamp' => time()
+                'test' => true,
+                'timestamp' => time()
             ],
             'customer_name' => 'Test',
             'customer_surname' => 'User',
@@ -476,48 +454,35 @@ public function store(Request $request)
 
         $results = [];
 
-        $results['config_check'] = $this->checkCinetPayConfig();
+        $results['config_check'] = $this->checkPayDunyaConfig();
+        $results['connectivity'] = $this->testConnectivity(config('paydunya.base_url'));
+        $results['api_test'] = $this->testPayDunyaRequest($testData);
 
-        $results['connectivity'] = $this->testConnectivity(config('cinetpay.base_url'));
-
-        $results['json_test'] = $this->testCinetPayRequest($testData, 'json');
-
-        return view('diagnostics.cinetpay', [
+        return view('diagnostics.paydunya', [
             'config' => $config,
             'results' => $results,
             'testData' => $testData,
         ]);
     }
 
-    private function checkCinetPayConfig()
+    private function checkPayDunyaConfig()
     {
         $issues = [];
         
-        if (empty(config('cinetpay.site_id'))) {
-            $issues[] = "Site ID manquant";
+        if (empty(config('paydunya.master_key'))) {
+            $issues[] = "Master Key manquante";
         }
         
-        if (empty(config('cinetpay.api_key'))) {
-            $issues[] = "Clé API manquante";
+        if (empty(config('paydunya.private_key'))) {
+            $issues[] = "Clé privée manquante";
         }
         
-        if (empty(config('cinetpay.secret_key'))) {
-            $issues[] = "Secret API manquant";
+        if (empty(config('paydunya.token'))) {
+            $issues[] = "Token manquant";
         }
         
-        if (empty(config('cinetpay.base_url'))) {
+        if (empty(config('paydunya.base_url'))) {
             $issues[] = "URL de base non configurée";
-        }
-        
-        if (!empty(config('cinetpay.base_url'))) {
-            try {
-                $result = Http::timeout(5)->get(config('cinetpay.base_url'));
-                if ($result->failed()) {
-                    $issues[] = "L'URL de base ne répond pas: " . $result->status();
-                }
-            } catch (\Exception $e) {
-                $issues[] = "Impossible de se connecter à l'URL de base: " . $e->getMessage();
-            }
         }
         
         return [
@@ -526,12 +491,12 @@ public function store(Request $request)
         ];
     }
 
-    private function testCinetPayRequest($data, $method = 'json')
+    private function testPayDunyaRequest($data)
     {
         try {
             $start = microtime(true);
             
-            $result = $this->makeJsonCinetPayRequest($data);
+            $result = $this->payDunyaService->createPaymentRequest($data);
             
             $time = round((microtime(true) - $start) * 1000);
             
@@ -544,40 +509,6 @@ public function store(Request $request)
                 'message' => 'Exception: ' . $e->getMessage()
             ];
         }
-    }
-
-    private function makeJsonCinetPayRequest($data)
-    {
-        $endpoint = config('cinetpay.base_url') . '/payment/request-payment';
-        
-        $payload = [
-            'amount' => $data['item_price'],
-            'currency' => config('cinetpay.currency', 'XOF'),
-            'site_id' => config('cinetpay.site_id'),
-            'transaction_id' => $data['ref_command'],
-            'description' => $data['command_name'],
-            'return_url' => $data['success_url'],
-            'notify_url' => $data['ipn_url'],
-            'customer_name' => $data['customer_name'],
-            'customer_surname' => $data['customer_surname'],
-            'customer_email' => $data['customer_email'],
-            'customer_phone' => $data['customer_phone'],
-            'metadata' => json_encode($data['custom_field'])
-        ];
-        
-        $response = Http::withOptions([
-            'verify' => app()->environment('local') ? false : true,
-            'timeout' => 10,
-        ])->withHeaders([
-            'Content-Type' => 'application/json',
-            'Authorization' => 'Bearer '.config('cinetpay.api_key')
-        ])->post($endpoint, $payload);
-        
-        return [
-            'success' => $response->successful(),
-            'status' => $response->status(),
-            'response' => $response->json() ?: ['raw' => $response->body()]
-        ];
     }
 
     private function testConnectivity($url)
@@ -601,6 +532,11 @@ public function store(Request $request)
         }
     }
 
+
+    
+    
+
+    
     
 public function findTarifSansLivraison($regionDepart, $regionArrivee, $typeColis)
 {
@@ -666,7 +602,6 @@ public function index()
         'montant_total' => Commnande::where('user_id', Auth::id())->sum('prix_final'),
     ];
 
-    // ✅ CORRECTION MAJEURE : Récupérer les livraisons avec les bonnes relations
     $livraisonsTerminees = Commnande::where('user_id', Auth::id())
         ->where('status', 'livree') 
         ->whereNotNull('driver_id') 

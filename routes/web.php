@@ -128,6 +128,10 @@ Route::middleware(['auth', 'role:livreur'])->prefix('livreur')->name('livreur.')
     Route::get('/api/revenus/{id}', [RevenuLivreurController::class, 'getGraphData'])
     ->name('api.revenus.graph');
 
+    // Routes manquantes ajoutées
+Route::post('/livraisons/{id}/update-position', [LivraisonEnCoursController::class, 'updatePosition'])->name('livraisons.update-position');
+Route::get('/livraisons/{id}/status', [LivraisonEnCoursController::class, 'getDeliveryStatus'])->name('livraisons.status');
+
      Route::get('/trajets', [LivreurController::class, 'listeTrajets'])->name('trajets.index');
     Route::get('/trajets/create', [LivreurController::class, 'createTrajet'])->name('trajets.create');
     Route::post('/trajets/store', [LivreurController::class, 'storeTrajet'])->name('trajets.store');
@@ -175,10 +179,12 @@ Route::middleware(['auth', 'role:client'])->group(function () {
     Route::get('/commnandes/confirmation/{id}', [CommnandeController::class, 'confirmation'])->name('commnandes.confirmation');
     Route::get('/commnandes/payment/success', [CommnandeController::class, 'paymentSuccess'])->name('commnandes.payment.success');
     Route::get('/commnandes/payment/cancel', [CommnandeController::class, 'paymentCancel'])->name('commnandes.payment.cancel');
-    Route::match(['GET', 'POST'], '/commnandes/payment/ipn', [CommnandeController::class, 'ipnCallback'])->name('commnandes.payment.ipn');
-Route::get('/commnandes/index', [CommnandeController::class, 'historique'])->name('commnandes.index');
+   Route::get('/commnandes/index', [CommnandeController::class, 'historique'])->name('commnandes.index');
     Route::get('/commnandes/{commnande}', [CommnandeController::class, 'show'])->name('commnandes.show');
 });
+Route::match(['GET', 'POST'], '/commnandes/payment/ipn', [CommnandeController::class, 'ipnCallback'])
+    ->name('commnandes.payment.ipn');
+
 // Divers
 Route::get('/suggestions', [\App\Http\Controllers\SuggestionController::class, 'getSuggestedCities']);
 Route::middleware(['auth', 'role:livreur'])->get('/paiements/par-mois', [RevenuLivreurController::class, 'filterPaiementsParMois'])->name('paiements.par.mois');

@@ -1,6 +1,5 @@
 <?php
 
-// config/cinetpay.php
 return [
     'api_key' => env('CINETPAY_API_KEY', ''),
     'site_id' => env('CINETPAY_SITE_ID', ''),
@@ -10,7 +9,5 @@ return [
     'env' => env('CINETPAY_ENV', 'test'), // test ou prod
     'version' => 'v2',
 
-    // 'url_success' => env('CINETPAY_URL_SUCCESS'),
-    // 'url_ipn'     => env('CINETPAY_URL_IPN'),
-    // 'url_cancel'  => env('CINETPAY_URL_CANCEL'),
+    
 ];

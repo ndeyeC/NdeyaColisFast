@@ -1,4 +1,4 @@
-// public/js/livraisoncours.js
+// public/js/livraisoncours.js - VERSION CORRIGÉE
 
 class LivraisonManager {
     constructor(currentDeliveryId) {
@@ -37,7 +37,8 @@ class LivraisonManager {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
 
-                fetch(`/api/livraisons/${this.currentDeliveryId}/update-position`, {
+                // CORRECTION: Utiliser la route web
+                fetch(`/livreur/livraisons/${this.currentDeliveryId}/update-position`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -45,7 +46,10 @@ class LivraisonManager {
                     },
                     body: JSON.stringify({ latitude: lat, longitude: lng })
                 })
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                    return res.json();
+                })
                 .then(data => {
                     if (data.success) {
                         this.updateDeliveryStats(data);
@@ -60,8 +64,12 @@ class LivraisonManager {
     }
 
     fetchDeliveryStatus() {
-        fetch(`/api/livraisons/${this.currentDeliveryId}/status`)
-            .then(res => res.json())
+        // CORRECTION: Utiliser la route web
+        fetch(`/livreur/livraisons/${this.currentDeliveryId}/status`)
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                return res.json();
+            })
             .then(data => {
                 if (data.success) this.updateDeliveryStats(data);
             })
@@ -462,56 +470,56 @@ class LivraisonManager {
         }
     }
 
-  setupFormSubmissions() {
-    const formsConfig = {
-        'deliveredForm': { needsGeolocation: true },
-        'problemForm': { needsGeolocation: true },
-        'cancelForm': { needsGeolocation: false }
-    };
-    
-    Object.entries(formsConfig).forEach(([formId, config]) => {
-        const form = document.getElementById(formId);
-        if (!form) {
-            console.warn(`Formulaire ${formId} non trouvé.`);
-            return;
-        }
+    setupFormSubmissions() {
+        const formsConfig = {
+            'deliveredForm': { needsGeolocation: true },
+            'problemForm': { needsGeolocation: true },
+            'cancelForm': { needsGeolocation: false }
+        };
         
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            if (config.needsGeolocation && navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    position => {
-                        this.updateOrCreateHiddenInput(form, 'latitude', position.coords.latitude);
-                        this.updateOrCreateHiddenInput(form, 'longitude', position.coords.longitude);
-                        console.log('Coordonnées obtenues:', {
-                            latitude: position.coords.latitude,
-                            longitude: position.coords.longitude
-                        });
-                        this.submitForm(form);
-                    },
-                    error => {
-                        console.error('Erreur géolocalisation:', error);
-                        let errorMessage = 'Impossible d\'obtenir la position. Veuillez activer la géolocalisation.';
-                        if (error.code === error.PERMISSION_DENIED) {
-                            errorMessage = 'Permission de géolocalisation refusée.';
-                        } else if (error.code === error.POSITION_UNAVAILABLE) {
-                            errorMessage = 'Position non disponible.';
-                        } else if (error.code === error.TIMEOUT) {
-                            errorMessage = 'Délai d\'obtention de la position dépassé.';
-                        }
-                        this.showAlert('error', errorMessage);
-                    },
-                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                );
-            } else if (config.needsGeolocation && !navigator.geolocation) {
-                this.showAlert('error', 'La géolocalisation n\'est pas supportée par votre navigateur.');
-            } else {
-                this.submitForm(form);
+        Object.entries(formsConfig).forEach(([formId, config]) => {
+            const form = document.getElementById(formId);
+            if (!form) {
+                console.warn(`Formulaire ${formId} non trouvé.`);
+                return;
             }
+            
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                if (config.needsGeolocation && navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        position => {
+                            this.updateOrCreateHiddenInput(form, 'latitude', position.coords.latitude);
+                            this.updateOrCreateHiddenInput(form, 'longitude', position.coords.longitude);
+                            console.log('Coordonnées obtenues:', {
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude
+                            });
+                            this.submitForm(form);
+                        },
+                        error => {
+                            console.error('Erreur géolocalisation:', error);
+                            let errorMessage = 'Impossible d\'obtenir la position. Veuillez activer la géolocalisation.';
+                            if (error.code === error.PERMISSION_DENIED) {
+                                errorMessage = 'Permission de géolocalisation refusée.';
+                            } else if (error.code === error.POSITION_UNAVAILABLE) {
+                                errorMessage = 'Position non disponible.';
+                            } else if (error.code === error.TIMEOUT) {
+                                errorMessage = 'Délai d\'obtention de la position dépassé.';
+                            }
+                            this.showAlert('error', errorMessage);
+                        },
+                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                    );
+                } else if (config.needsGeolocation && !navigator.geolocation) {
+                    this.showAlert('error', 'La géolocalisation n\'est pas supportée par votre navigateur.');
+                } else {
+                    this.submitForm(form);
+                }
+            });
         });
-    });
-}
+    }
 
     updateOrCreateHiddenInput(form, name, value) {
         let input = form.querySelector(`input[name="${name}"]`);
@@ -524,104 +532,104 @@ class LivraisonManager {
         input.value = value;
     }
 
-submitForm(form) {
-    const formData = new FormData(form);
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const submitText = submitBtn.querySelector('.submit-text') || submitBtn;
-    const originalText = submitText.textContent;
-    
-    const errorContainerMap = {
-        'cancelForm': 'cancelFormErrors',
-        'problemForm': 'problemFormErrors', 
-        'deliveredForm': 'deliveredFormErrors'
-    };
-    const errorContainer = document.getElementById(errorContainerMap[form.id]);
-    
-    // Vérifier la connexion réseau
-    if (!navigator.onLine) {
-        this.showAlert('error', 'Aucune connexion réseau. Veuillez vérifier votre connexion.');
-        return;
-    }
-
-    submitBtn.disabled = true;
-    submitText.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Envoi...';
-    
-    if (errorContainer) {
-        errorContainer.classList.add('hidden');
-        errorContainer.innerHTML = '';
-    }
-
-    console.log('Soumission du formulaire:', form.action, 'Données:', Object.fromEntries(formData));
-
-    fetch(form.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(async response => {
-        console.log('Réponse reçue:', response.status, 'Content-Type:', response.headers.get('content-type'));
+    submitForm(form) {
+        const formData = new FormData(form);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const submitText = submitBtn.querySelector('.submit-text') || submitBtn;
+        const originalText = submitText.textContent;
         
-        // Vérifier si la réponse est JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            const text = await response.text();
-            console.error('Réponse non-JSON:', text);
-            throw new Error('Réponse invalide du serveur (non-JSON).');
-        }
-
-        const data = await response.json();
+        const errorContainerMap = {
+            'cancelForm': 'cancelFormErrors',
+            'problemForm': 'problemFormErrors', 
+            'deliveredForm': 'deliveredFormErrors'
+        };
+        const errorContainer = document.getElementById(errorContainerMap[form.id]);
         
-        if (!response.ok) {
-            if (response.status === 422) {
-                const errors = data.errors || {};
-                const errorMessages = Object.values(errors).flat().join('\n');
-                throw new Error(errorMessages || 'Données invalides.');
-            } else if (response.status === 403) {
-                throw new Error('Accès refusé.');
-            } else if (response.status === 404) {
-                throw new Error('Commande non trouvée.');
-            } else if (response.status === 500) {
-                throw new Error(data.message || 'Erreur serveur.');
-            } else {
-                throw new Error(data.message || `Erreur HTTP ${response.status}.`);
-            }
+        // Vérifier la connexion réseau
+        if (!navigator.onLine) {
+            this.showAlert('error', 'Aucune connexion réseau. Veuillez vérifier votre connexion.');
+            return;
         }
 
-        if (data.success) {
-            this.showAlert('success', data.message || 'Opération réussie');
-            setTimeout(() => {
-                const modalMap = {
-                    'cancelForm': 'cancelModal',
-                    'problemForm': 'problemModal',
-                    'deliveredForm': 'deliveredModal'
-                };
-                this.closeModal(modalMap[form.id]);
-                window.location.reload();
-            }, 1500);
-        } else {
-            throw new Error(data.message || 'Opération échouée.');
-        }
-    })
-    .catch(error => {
-        console.error('Erreur soumission:', error);
-        const errorMessage = error.message || 'Une erreur inattendue est survenue.';
+        submitBtn.disabled = true;
+        submitText.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Envoi...';
         
         if (errorContainer) {
-            errorContainer.textContent = errorMessage;
-            errorContainer.classList.remove('hidden');
-        } else {
-            this.showAlert('error', errorMessage);
+            errorContainer.classList.add('hidden');
+            errorContainer.innerHTML = '';
         }
-    })
-    .finally(() => {
-        submitBtn.disabled = false;
-        submitText.textContent = originalText;
-    });
-}
+
+        console.log('Soumission du formulaire:', form.action, 'Données:', Object.fromEntries(formData));
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(async response => {
+            console.log('Réponse reçue:', response.status, 'Content-Type:', response.headers.get('content-type'));
+            
+            // Vérifier si la réponse est JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Réponse non-JSON:', text);
+                throw new Error('Réponse invalide du serveur (non-JSON).');
+            }
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                if (response.status === 422) {
+                    const errors = data.errors || {};
+                    const errorMessages = Object.values(errors).flat().join('\n');
+                    throw new Error(errorMessages || 'Données invalides.');
+                } else if (response.status === 403) {
+                    throw new Error('Accès refusé.');
+                } else if (response.status === 404) {
+                    throw new Error('Commande non trouvée.');
+                } else if (response.status === 500) {
+                    throw new Error(data.message || 'Erreur serveur.');
+                } else {
+                    throw new Error(data.message || `Erreur HTTP ${response.status}.`);
+                }
+            }
+
+            if (data.success) {
+                this.showAlert('success', data.message || 'Opération réussie');
+                setTimeout(() => {
+                    const modalMap = {
+                        'cancelForm': 'cancelModal',
+                        'problemForm': 'problemModal',
+                        'deliveredForm': 'deliveredModal'
+                    };
+                    this.closeModal(modalMap[form.id]);
+                    window.location.reload();
+                }, 1500);
+            } else {
+                throw new Error(data.message || 'Opération échouée.');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur soumission:', error);
+            const errorMessage = error.message || 'Une erreur inattendue est survenue.';
+            
+            if (errorContainer) {
+                errorContainer.textContent = errorMessage;
+                errorContainer.classList.remove('hidden');
+            } else {
+                this.showAlert('error', errorMessage);
+            }
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitText.textContent = originalText;
+        });
+    }
 
     openModal(id) {
         const modal = document.getElementById(id);
