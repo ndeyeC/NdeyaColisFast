@@ -6,6 +6,8 @@ const config: CapacitorConfig = {
   webDir: 'public/mobile',
   server: {
     url: 'http://10.0.2.2:8000', 
+    // url: 'http://192.168.1.8:8000',
+
     cleartext: true,
     allowNavigation: ["*"],
   },

@@ -1,4 +1,6 @@
 import './bootstrap';
+import 'bootstrap';   // ✅ajout
+
 
 import Alpine from 'alpinejs';
 

@@ -7,8 +7,7 @@ return [
     'token'       => env('PAYDUNYA_TOKEN', ''),
     
     // Mode : 'test' ou 'live'
-    'mode'        => env('PAYDUNYA_MODE', 'test'),
-
+    'mode'        => env('PAYDUNYA_MODE', 'live'),
     // Devise
     'currency'    => env('PAYDUNYA_CURRENCY', 'XOF'),
 

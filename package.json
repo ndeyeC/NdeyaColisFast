@@ -8,12 +8,12 @@
     "devDependencies": {
         "@tailwindcss/forms": "^0.5.2",
         "alpinejs": "^3.4.2",
-        "autoprefixer": "^10.4.2",
+        "autoprefixer": "^10.4.21",
         "axios": "^1.7.4",
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^1.2.0",
-        "postcss": "^8.4.31",
-        "tailwindcss": "^3.1.0",
+        "postcss": "^8.5.6",
+        "tailwindcss": "^3.4.17",
         "typescript": "^5.9.2",
         "vite": "^6.0.11"
     },
@@ -23,6 +23,8 @@
         "@capacitor/cli": "^7.4.3",
         "@capacitor/core": "^7.4.3",
         "@capacitor/geolocation": "^7.1.5",
-        "@capacitor/ios": "^7.4.3"
+        "@capacitor/ios": "^7.4.3",
+        "@fortawesome/fontawesome-free": "^7.0.1",
+        "bootstrap": "^5.3.8"
     }
 }

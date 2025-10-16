@@ -122,11 +122,7 @@
                     </div>
                     <h3 class="text-xl font-semibold text-gray-900 mb-2">Aucune livraison</h3>
                     <p class="text-gray-500 mb-6">Vous n'avez pas encore effectué de commande.</p>
-                    <a href="{{ route('livraison.create') }}" 
-                       class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-medium rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-lg hover:shadow-xl">
-                        <i class="fas fa-plus mr-2"></i>
-                        Faire une livraison
-                    </a>
+                   
                 </div>
             @endforelse
         </div>

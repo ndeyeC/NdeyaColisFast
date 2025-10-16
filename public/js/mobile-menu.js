@@ -24,6 +24,11 @@ function closeMobileMenu() {
     button.innerHTML = '<i class="fas fa-bars text-xl"></i>';
     document.body.style.overflow = '';
 }
+window.addEventListener('resize', () => {
+    console.log('Largeur écran :', window.innerWidth);
+    if (window.innerWidth >= 768) closeMobileMenu();
+});
+
 
 // Fermer le menu si on redimensionne l'écran
 window.addEventListener('resize', () => {

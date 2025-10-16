@@ -27,7 +27,9 @@
                 </div>
             </div>
             <div class="bg-gray-100 p-8 rounded-lg">
-                <img src="/api/placeholder/500/400" alt="Équipe colisFast" class="w-full rounded-lg">
+                <!-- <img src="/api/placeholder/500/400" alt="Équipe colisFast" class="w-full rounded-lg"> -->
+                <img src="{{ asset('image/logo2.jpg') }}" alt="Équipe colisFast" class="w-full rounded-lg">
+
             </div>
         </div>
     </div>
@@ -82,22 +84,22 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div class="text-center">
                 <div class="w-32 h-32 bg-gray-300 rounded-full mx-auto mb-4"></div>
-                <h3 class="text-xl font-bold mb-2">Amadou Diallo</h3>
-                <p class="text-gray-600 mb-2">Directeur Général</p>
-                <p class="text-sm text-gray-500">Expert en logistique avec 10+ ans d'expérience</p>
+                <h3 class="text-xl font-bold mb-2">Ben Sara Nguom</h3>
+                <p class="text-gray-600 mb-2">CEO Colisfast</p>
+                <p class="text-sm text-gray-500">Expert en logistique</p>
             </div>
             
             <div class="text-center">
                 <div class="w-32 h-32 bg-gray-300 rounded-full mx-auto mb-4"></div>
-                <h3 class="text-xl font-bold mb-2">Fatou Seck</h3>
-                <p class="text-gray-600 mb-2">Directrice Technique</p>
-                <p class="text-sm text-gray-500">Ingénieure en informatique, spécialiste des technologies</p>
+                <h3 class="text-xl font-bold mb-2">M.Elysee Minstrie </h3>
+                <p class="text-gray-600 mb-2">Admin</p>
+                <p class="text-sm text-gray-500">Ingénieur<../p>
             </div>
             
             <div class="text-center">
                 <div class="w-32 h-32 bg-gray-300 rounded-full mx-auto mb-4"></div>
-                <h3 class="text-xl font-bold mb-2">Moussa Ndiaye</h3>
-                <p class="text-gray-600 mb-2">Responsable Opérations</p>
+                <h3 class="text-xl font-bold mb-2">Cheikh</h3>
+                <p class="text-gray-600 mb-2">Responsable ....</p>
                 <p class="text-sm text-gray-500">Coordonne nos équipes de livraison sur le terrain</p>
             </div>
         </div>

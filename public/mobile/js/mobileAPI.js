@@ -21,7 +21,7 @@ class MobileAPI {
         } catch (e) {
             // Fallback si localStorage n'est pas disponible
             return this.token || null;
-        }
+        } 
     }
 
     setStoredToken(token) {
